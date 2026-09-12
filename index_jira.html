@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Soporte — Norden Brokers</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Arial,sans-serif;background:#F0F3F8;color:#1a1a2e;min-height:100vh}
+header{background:linear-gradient(135deg,#1E3A5F,#2E6DA4);color:#fff;padding:16px 28px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+header h1{font-size:18px;font-weight:700}
+.main{padding:18px 28px;max-width:1400px;margin:0 auto}
+
+/* NAV TABS */
+.tabs{display:flex;gap:4px;margin-bottom:18px;background:#fff;border-radius:10px;padding:5px;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.tab{flex:1;text-align:center;padding:9px 6px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;color:#666;transition:all .2s}
+.tab.active{background:#1E3A5F;color:#fff}
+.tab:hover:not(.active){background:#f0f4f8}
+.section{display:none}.section.active{display:block}
+
+/* UPLOAD */
+.upload-zone{background:#fff;border:2px dashed #4A9FD4;border-radius:10px;padding:14px 20px;margin-bottom:16px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;cursor:pointer;transition:.2s}
+.upload-zone:hover{border-color:#1E3A5F;background:#f0f7ff}
+.btn-upload{background:#2E6DA4;color:#fff;border:none;border-radius:7px;padding:8px 16px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap}
+.btn-upload:hover{background:#1E3A5F}
+#fileInput{display:none}
+.upload-status{font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px}
+.ok{background:#e8f8ef;color:#27AE60}.err{background:#fdecea;color:#E24B4A}
+
+/* FILTERS */
+.filters{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:16px;background:#fff;border-radius:10px;padding:12px 16px;box-shadow:0 1px 4px rgba(0,0,0,.07)}
+.filters label{font-size:12px;color:#555;font-weight:600}
+.filters select{font-size:12px;padding:6px 10px;border-radius:7px;border:1px solid #d0d7e2;background:#f9fbfd;color:#1E3A5F}
+.btn-sm{font-size:11px;padding:6px 12px;border-radius:7px;border:1px solid #d0d7e2;background:#fff;cursor:pointer;color:#555}
+.btn-sm:hover{background:#f0f4f8}
+
+/* KPI */
+.kpi-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:16px}
+.kpi{background:#fff;border-radius:10px;padding:14px 16px;box-shadow:0 1px 4px rgba(0,0,0,.07);border-top:4px solid var(--kc)}
+.kpi-label{font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
+.kpi-value{font-size:24px;font-weight:700;color:var(--kc);line-height:1}
+.kpi-pct{font-size:11px;color:#aaa;margin-top:3px}
+
+/* CHARTS ROW */
+.charts-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px}
+.charts-row-2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.card{background:#fff;border-radius:10px;padding:16px 18px;box-shadow:0 1px 4px rgba(0,0,0,.07)}
+.card-title{font-size:12px;font-weight:700;color:#1E3A5F;margin-bottom:10px;text-transform:uppercase;letter-spacing:.04em;display:flex;justify-content:space-between;align-items:center}
+.legend{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px}
+.leg{display:flex;align-items:center;gap:4px;font-size:10px;color:#555}
+.leg-dot{width:9px;height:9px;border-radius:2px;flex-shrink:0}
+.chart-wrap{position:relative;width:100%}
+
+/* TABLA CRUZADA TRANSPUESTA */
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:11px}
+thead th{background:#1E3A5F;color:#fff;padding:8px 10px;text-align:left;white-space:nowrap;font-size:10px}
+tbody td{padding:7px 10px;border-bottom:1px solid #f0f2f5;vertical-align:middle}
+tbody tr:hover td{background:#f4f8fc}
+tfoot td{background:#EBF4FA;font-weight:700;padding:8px 10px;font-size:11px}
+.bar-cell{display:flex;align-items:center;gap:6px}
+.mini-bar{height:6px;border-radius:3px;min-width:2px}
+
+/* HORAS - BURNDOWN */
+.horas-header{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px}
+.horas-card{background:#fff;border-radius:10px;padding:16px 18px;box-shadow:0 1px 4px rgba(0,0,0,.07)}
+.horas-card label{font-size:11px;color:#888;display:block;margin-bottom:4px;font-weight:600;text-transform:uppercase}
+.horas-input{width:100%;font-size:22px;font-weight:700;border:2px solid #d0d7e2;border-radius:8px;padding:6px 10px;color:#1E3A5F;text-align:center}
+.horas-input:focus{outline:none;border-color:#2E6DA4}
+.progress-wrap{background:#f0f2f5;border-radius:20px;height:14px;overflow:hidden;margin-top:8px}
+.progress-bar{height:100%;border-radius:20px;transition:width .4s}
+.estimativo{background:#fff;border-radius:10px;padding:16px 18px;box-shadow:0 1px 4px rgba(0,0,0,.07);margin-bottom:14px}
+.est-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:10px}
+.est-item{background:#f4f8fc;border-radius:8px;padding:10px 12px;text-align:center}
+.est-num{font-size:20px;font-weight:700;color:#1E3A5F}
+.est-label{font-size:10px;color:#888;margin-top:2px}
+
+/* TABLA JIRAS */
+.jira-table-wrap{background:#fff;border-radius:10px;padding:16px 18px;box-shadow:0 1px 4px rgba(0,0,0,.07)}
+.jira-toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.jira-search{font-size:12px;padding:7px 12px;border-radius:7px;border:1px solid #d0d7e2;flex:1;min-width:200px}
+.btn-export{background:#27AE60;color:#fff;border:none;border-radius:7px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer}
+.btn-export:hover{background:#219A52}
+table.jira-t{width:100%;border-collapse:collapse;font-size:11px}
+table.jira-t thead th{background:#1E3A5F;color:#fff;padding:8px 8px;text-align:left;white-space:nowrap;font-size:10px;position:sticky;top:0}
+table.jira-t tbody td{padding:6px 8px;border-bottom:1px solid #f0f2f5;vertical-align:middle}
+table.jira-t tbody tr:hover td{background:#f4f8fc}
+.badge{display:inline-block;font-size:9px;font-weight:700;padding:2px 7px;border-radius:20px;white-space:nowrap}
+.inp-h{width:60px;font-size:11px;padding:3px 5px;border:1px solid #d0d7e2;border-radius:5px;text-align:center}
+.inp-h:focus{outline:none;border-color:#2E6DA4}
+.chk-ok{width:15px;height:15px;cursor:pointer;accent-color:#27AE60}
+.jira-scroll{max-height:420px;overflow-y:auto}
+
+@media(max-width:900px){
+  .kpi-grid{grid-template-columns:repeat(3,1fr)}
+  .charts-row{grid-template-columns:1fr 1fr}
+  .horas-header{grid-template-columns:1fr 1fr}
+  .est-grid{grid-template-columns:repeat(2,1fr)}
+}
+@media(max-width:600px){
+  .kpi-grid{grid-template-columns:repeat(2,1fr)}
+  .charts-row,.charts-row-2{grid-template-columns:1fr}
+  .main{padding:12px}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>&#128202; Dashboard de Soporte &mdash; Norden Brokers</h1>
+    <div style="font-size:11px;opacity:.7;margin-top:2px">Tickets por Tipo de Incidencia, Estado y Gestión de Horas</div>
+  </div>
+  <div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px">
+    <span id="fecha" style="font-size:11px;opacity:.75"></span>
+    <span id="headerCount" style="font-size:11px;opacity:.75"></span>
+  </div>
+</header>
+
+<div class="main">
+
+<!-- UPLOAD -->
+<div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()"
+     ondragover="event.preventDefault();this.classList.add('drag')"
+     ondragleave="this.classList.remove('drag')"
+     ondrop="event.preventDefault();this.classList.remove('drag');handleFile(event.dataTransfer.files[0])">
+  <span style="font-size:26px">&#128196;</span>
+  <div style="flex:1">
+    <strong style="font-size:13px;color:#1E3A5F;display:block">Actualizar datos desde Jira</strong>
+    <span style="font-size:11px;color:#888">Arrastrá el .xlsx o hacé clic para seleccionar &bull; Las horas asignadas se conservan</span>
+  </div>
+  <button class="btn-upload" onclick="event.stopPropagation();document.getElementById('fileInput').click()">&#8593; Subir Excel</button>
+  <span class="upload-status ok" id="uploadStatus">&#10003; 383 tickets cargados</span>
+  <input type="file" id="fileInput" accept=".xlsx,.xls" onchange="handleFile(this.files[0])">
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+  <div class="tab active" onclick="switchTab(0)">&#128200; Resumen general</div>
+  <div class="tab" onclick="switchTab(1)">&#128337; Gestión de horas</div>
+  <div class="tab" onclick="switchTab(2)">&#128203; Planificador Jiras</div>
+</div>
+
+<!-- ═══════════════ TAB 0: RESUMEN ═══════════════ -->
+<div class="section active" id="tab0">
+  <div class="filters">
+    <label>Tipo:</label>
+    <select id="f0tipo" onchange="updateResumen()"><option value="">Todos</option></select>
+    <label>Estado:</label>
+    <select id="f0estado" onchange="updateResumen()"><option value="">Todos</option></select>
+    <button class="btn-sm" onclick="document.getElementById('f0tipo').value='';document.getElementById('f0estado').value='';updateResumen()">&#10005; Limpiar</button>
+    <span id="f0count" style="margin-left:auto;font-size:11px;color:#888"></span>
+  </div>
+
+  <div class="kpi-grid">
+    <div class="kpi" style="--kc:#2E6DA4"><div class="kpi-label">Total tickets</div><div class="kpi-value" id="k0total">0</div><div class="kpi-pct">tickets</div></div>
+    <div class="kpi" style="--kc:#27AE60"><div class="kpi-label">Finalizados</div><div class="kpi-value" id="k0fin">0</div><div class="kpi-pct" id="k0finp"></div></div>
+    <div class="kpi" style="--kc:#E67E22"><div class="kpi-label">Pendientes</div><div class="kpi-value" id="k0pend">0</div><div class="kpi-pct" id="k0pendp"></div></div>
+    <div class="kpi" style="--kc:#8E44AD"><div class="kpi-label">En proceso</div><div class="kpi-value" id="k0proc">0</div><div class="kpi-pct" id="k0procp"></div></div>
+    <div class="kpi" style="--kc:#E24B4A"><div class="kpi-label">Rechazados</div><div class="kpi-value" id="k0rech">0</div><div class="kpi-pct" id="k0rechp"></div></div>
+  </div>
+
+  <div class="charts-row">
+    <div class="card">
+      <div class="card-title">Por tipo de incidencia</div>
+      <div class="legend" id="leg0a"></div>
+      <div class="chart-wrap" style="height:200px"><canvas id="ch0a" role="img" aria-label="Tickets por tipo">Distribución por tipo.</canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Por estado</div>
+      <div class="legend" id="leg0b"></div>
+      <div class="chart-wrap" style="height:200px"><canvas id="ch0b" role="img" aria-label="Tickets por estado">Distribución por estado.</canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Comparativo tipo × estado</div>
+      <div class="legend" id="leg0c"></div>
+      <div class="chart-wrap" style="height:200px"><canvas id="ch0c" role="img" aria-label="Comparativo tipo por estado">Comparativo.</canvas></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Estado × Tipo de incidencia <span style="font-size:10px;font-weight:400;color:#aaa">(filas = estados, columnas = tipos)</span></div>
+    <div class="table-wrap" id="crossTable"></div>
+  </div>
+</div>
+
+<!-- ═══════════════ TAB 1: HORAS ═══════════════ -->
+<div class="section" id="tab1">
+
+  <div class="horas-header">
+    <div class="horas-card">
+      <label>&#128337; Horas acordadas / concedidas</label>
+      <input type="number" class="horas-input" id="horasAcordadas" value="200" min="1" oninput="updateHoras()">
+      <div style="font-size:10px;color:#888;margin-top:6px">Total de horas disponibles para el período</div>
+    </div>
+    <div class="horas-card">
+      <label>&#9989; Horas asignadas (con OK)</label>
+      <div class="kpi-value" id="horasUsadas" style="color:#27AE60;font-size:28px;margin-bottom:6px">0</div>
+      <div class="progress-wrap"><div class="progress-bar" id="pbUsadas" style="background:#27AE60;width:0%"></div></div>
+      <div style="font-size:10px;color:#888;margin-top:4px" id="pctUsadas">0% de las horas acordadas</div>
+    </div>
+    <div class="horas-card">
+      <label>&#128336; Horas restantes</label>
+      <div class="kpi-value" id="horasRestantes" style="color:#2E6DA4;font-size:28px;margin-bottom:6px">200</div>
+      <div class="progress-wrap"><div class="progress-bar" id="pbRestantes" style="background:#2E6DA4;width:100%"></div></div>
+      <div style="font-size:10px;color:#888;margin-top:4px" id="pctRestantes">100% disponible</div>
+    </div>
+  </div>
+
+  <div class="estimativo">
+    <div class="card-title">&#128161; Estimativo de capacidad <span style="font-size:10px;font-weight:400;color:#aaa">— basado en horas restantes y mínimo de 10hs por Jira</span></div>
+    <div class="est-grid">
+      <div class="est-item"><div class="est-num" id="estJirasRestantes" style="color:#2E6DA4">0</div><div class="est-label">Jiras que entran con horas restantes</div></div>
+      <div class="est-item"><div class="est-num" id="estJirasPendientes" style="color:#E67E22">0</div><div class="est-label">Jiras pendientes sin horas asignadas</div></div>
+      <div class="est-item"><div class="est-num" id="estHorasPendientes" style="color:#8E44AD">0</div><div class="est-label">Horas mínimas necesarias (pendientes)</div></div>
+      <div class="est-item"><div class="est-num" id="estDelta" style="color:#27AE60">0</div><div class="est-label">Balance horas restantes vs necesarias</div></div>
+    </div>
+  </div>
+
+  <div class="charts-row-2">
+    <div class="card">
+      <div class="card-title">Burn-down de horas</div>
+      <div class="chart-wrap" style="height:220px"><canvas id="chBurn" role="img" aria-label="Burndown de horas">Burndown.</canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Horas por tipo de incidencia</div>
+      <div class="legend" id="legHoras"></div>
+      <div class="chart-wrap" style="height:220px"><canvas id="chHoras" role="img" aria-label="Horas por tipo">Horas por tipo.</canvas></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ TAB 2: PLANIFICADOR ═══════════════ -->
+<div class="section" id="tab2">
+  <div class="jira-table-wrap">
+    <div class="jira-toolbar">
+      <input type="text" class="jira-search" id="jiraSearch" placeholder="&#128269; Buscar por clave, resumen, tipo o estado..." oninput="renderJiraTable()">
+      <select id="j2tipo" onchange="renderJiraTable()" style="font-size:12px;padding:6px 10px;border-radius:7px;border:1px solid #d0d7e2"><option value="">Todos los tipos</option></select>
+      <select id="j2estado" onchange="renderJiraTable()" style="font-size:12px;padding:6px 10px;border-radius:7px;border:1px solid #d0d7e2"><option value="">Todos los estados</option></select>
+      <select id="j2ok" onchange="renderJiraTable()" style="font-size:12px;padding:6px 10px;border-radius:7px;border:1px solid #d0d7e2">
+        <option value="">Todos</option>
+        <option value="ok">Con OK &#9989;</option>
+        <option value="nok">Sin OK</option>
+      </select>
+      <button class="btn-export" onclick="exportExcel()">&#8595; Exportar Excel</button>
+    </div>
+    <div class="jira-scroll">
+      <table class="jira-t">
+        <thead><tr>
+          <th>Clave</th><th>Tipo</th><th>Estado</th><th>Prioridad</th><th>Resumen</th>
+          <th title="Mínimo de horas estimadas">Hs. mín.</th>
+          <th title="Horas reales asignadas al trabajo">Hs. asignadas</th>
+          <th title="Marcar cuando el Jira tiene aprobación">OK &#9989;</th>
+        </tr></thead>
+        <tbody id="jiraBody"></tbody>
+      </table>
+    </div>
+    <div style="font-size:11px;color:#888;margin-top:8px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px">
+      <span id="jiraCount"></span>
+      <span style="color:#aaa">&#9888; Los cambios de horas y OK se guardan automáticamente en esta sesión. Exportá a Excel para conservarlos.</span>
+    </div>
+  </div>
+</div>
+
+</div><!-- /main -->
+
+<script>
+document.getElementById('fecha').textContent = new Date().toLocaleDateString('es-AR',{day:'2-digit',month:'long',year:'numeric'});
+
+// ── PALETAS ──
+const TIPO_C = {"Soporte":"#378ADD","Error":"#E24B4A","Nueva caracter\u00edstica":"#3B6D11","Solicitud enviada por correo electr\u00f3nico":"#BA7517"};
+const ESTADO_C = {"Finalizada":"#27AE60","Pendiente - Desarrollo":"#E67E22","Pendiente - Soporte":"#F39C12","Rechazado":"#E24B4A","Analisis funcional":"#8E44AD","Test":"#1D9E75","Trabajo en curso":"#2980B9","An\u00e1lisis t\u00e9cnico":"#7F8C8D","Planificado":"#2C3E50"};
+const TIPO_SHORT = {"Soporte":"Soporte","Error":"Error","Nueva caracter\u00edstica":"Nueva caract.","Solicitud enviada por correo electr\u00f3nico":"Por correo"};
+function clr(k,map){return map[k]||'#'+Math.abs(k.split('').reduce((a,c)=>a*31+c.charCodeAt(0),0)).toString(16).padStart(6,'0').slice(0,6);}
+
+// ── DATOS ──
+let RAW = [{"tipo": "Soporte", "clave": "NS-1407", "resumen": "Operaciones Norden BI// Soportes JIRA", "estado": "Trabajo en curso", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-1398", "resumen": "Linea comercial Norden BI// Quick cotizador San Cristobal", "estado": "Test", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-1392", "resumen": "Operaciones Norden BI// Vigencia de operacion errada", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-1387", "resumen": "Administración// Norden Bi ERROR AL PROCESAR LIQUIDACIONES", "estado": "Trabajo en curso", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-1386", "resumen": "Linea comercial Norden BI// Cotizador combinado familiar Bug Clausula de ajuste", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-1384", "resumen": "Linea personas// Error en emisión mapeo de actividad", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-1380", "resumen": "MODIFICAR NUMERO DE POLIZA - ASEGURADORA BERKLEY", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-1365", "resumen": "INFORMATIVO - GENERICA DE SINIESTROS e Interfaces conectadas /Cotizacion y Emisi", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Nueva característica", "clave": "NS-1364", "resumen": "Consulta sobre el Funcionamiento interfaz cobranzas Bitrix", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-1363", "resumen": "Agro Norden BI// Usuario de carga Cobranza", "estado": "Pendiente - Soporte", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-1362", "resumen": "Cobranzas Norden BI// URGENTE - ERROR AL PROCESAR LIQUIDACIONES", "estado": "Analisis funcional", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Solicitud enviada por correo electrónico", "clave": "NS-1359", "resumen": "ERROR DE IA en Presupuestos", "estado": "Pendiente - Soporte", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-1350", "resumen": "Linea comercial Norden BI// Error al vender presupuesto 172934", "estado": "Pendiente - Desarrollo", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-1343", "resumen": "Linea comercial Norden BI// Error al descargar poliza Zurich", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-1341", "resumen": "Agro Norden BI// Error en reporte Siniestros Agro", "estado": "Pendiente - Desarrollo", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-1340", "resumen": "Agro Norden BI// Error en descarga de reporte Produccion Agrícola", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-1339", "resumen": "Linea personas// Meridional Cotizador AP", "estado": "Pendiente - Desarrollo", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-1338", "resumen": "Operaciones Norden BI// Descarga de poliza Federación Patronal", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-1331", "resumen": "Operaciones Norden BI// Error en reporte crosseling", "estado": "Analisis funcional", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-1330", "resumen": "Operaciones Norden BI// Error en reporte Informe Vehículos Vigentes", "estado": "Pendiente - Desarrollo", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-1326", "resumen": "Operaciones Norden BI// Error en alta de Ente Productor Vendedor", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-1325", "resumen": "Vehiculos Duplicados", "estado": "Pendiente - Desarrollo", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-1322", "resumen": "Agro Norden BI// Error en descarga de reporte Deuda por Cliente", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-1314", "resumen": "Operaciones Norden BI// Eliminar Ente Productores/ Vendedores MONIACI, LARA", "estado": "Pendiente - Soporte", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-1311", "resumen": "Linea comercial Norden BI// Cotizador Hogar Zurich Limites y maximos", "estado": "Trabajo en curso", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-1307", "resumen": "Operaciones Norden BI// Novedades San Cristobal", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-1306", "resumen": "Operaciones Norden BI// Interface Actualiza Generica Asegurados - Excel", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-1299", "resumen": "linea comercial Norden BI// Cotizador Ap Meridional", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-1298", "resumen": "Linea comercial Norden BI// Error Cotizador combinado familiar", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-1296", "resumen": "Caido sistema Norden BI", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-1294", "resumen": "Operaciones Norden BI// Novedades Sancor", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-1291", "resumen": "DESCUENTO AUTOMOTORES - PARAMETROS ZURICH - MULTICOTIZADOR", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-1289", "resumen": "Operaciones Norden BI// Botonera para anular Op 2667520", "estado": "Pendiente - Soporte", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Solicitud enviada por correo electrónico", "clave": "NS-1278", "resumen": "RE: [NordenBI] Novedades Seguros Rivadavia", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-1267", "resumen": "Operaciones Norden BI// Interface Allianz rebotes", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-1260", "resumen": "Linea comercial Norden BI// Error en copia de operaciones", "estado": "Finalizada", "prioridad": "Alta", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-1257", "resumen": "Linea comercial Norden BI// Error EMBID al emitir negocio  APDELGANI, DIEGO MART", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-1255", "resumen": "Operaciones Norden BI// Mensajes por servicio caido o novedades en el sistema", "estado": "Pendiente - Soporte", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-1254", "resumen": "ERROR ALLIANZ", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-1248", "resumen": "Operaciones Norden BI// Pólizas con liquidación asociada", "estado": "Analisis funcional", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-1241", "resumen": "Linea comercial Norden BI// Zurich combinado familiar // Resultados de una emisi", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Nueva característica", "clave": "NS-1238", "resumen": "Operaciones Norden BI// Información de los datos de pas en la operación", "estado": "Pendiente - Soporte", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-1233", "resumen": "Linea personas// Mejora al cotizador Zurich hogar (Telefono)", "estado": "Pendiente - Soporte", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-1231", "resumen": "Linea comercial Norden BI// Modificación masiva Texto adicional", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-1224", "resumen": "Siniestros Norden BI// Declaración de siniestros", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-1223", "resumen": "Linea comercial Norden BI// Error en consulta de Operación 3068651", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-1221", "resumen": "Operaciones Norden BI// Error al modificar el domicilio de un ente en la tabla", "estado": "Finalizada", "prioridad": "Alta", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-1212", "resumen": "COTIZADOR DE HOGAR - ZURICH - ERRORES - Segun Reunion 15/05", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Nueva característica", "clave": "NS-1211", "resumen": "COTIZADOR DE HOGAR - ZURICH - MEJORAS - Segun Reunion 15/05", "estado": "Pendiente - Desarrollo", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-1210", "resumen": "COTIZADOR DE AP MERIDIONAL - Correcciones - Segun Reunion 15/05", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-1208", "resumen": "Operaciones Norden BI// Combinado Zurich actualizar coberturas", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-1195", "resumen": "Agro Norden BI// Unir el cotizador con el adelanto de cobertura", "estado": "Pendiente - Desarrollo", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-1193", "resumen": "Administración// Norden Bi ERROR AL PROCESAR LIQUIDACIONES", "estado": "Pendiente - Desarrollo", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-1190", "resumen": "Operaciones Norden BI// Zurich combinado familiar", "estado": "Pendiente - Desarrollo", "prioridad": "Alta", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-1188", "resumen": "Agro Norden BI// Pedido de mejoras y filtros para los diferentes reportes", "estado": "Analisis funcional", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-1187", "resumen": "Agro Norden BI// Pedido de mejoras y filtros para los diferentes reportes", "estado": "Pendiente - Desarrollo", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-1182", "resumen": "Linea comercial Norden BI// Zúrich combinado familiar comisiones", "estado": "Test", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-1181", "resumen": "Linea comercial Norden BI// Cotizador Zúrich combinado familiar", "estado": "Test", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-1180", "resumen": "Linea personas// Meridional Cotizador AP Mejora", "estado": "Pendiente - Desarrollo", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-1178", "resumen": "Linea personas// Meridional Cotizador AP Mejora", "estado": "Análisis técnico", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-1177", "resumen": "Linea personas// Meridional Cotizador AP Mejora Esencial", "estado": "Pendiente - Desarrollo", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-1176", "resumen": "INLCLUIR MOTOS - OPERATORIA BELT", "estado": "Analisis funcional", "prioridad": "Urgente", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-1175", "resumen": "Operaciones Norden BI// Generica de Cobertura", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-1174", "resumen": "Operaciones Norden BI// Novedades Sancor", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-1173", "resumen": "Generica Vehiculo", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-1172", "resumen": "Linea personas// Meridional Cotizador AP", "estado": "Pendiente - Desarrollo", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-1167", "resumen": "Linea comercial Norden BI// Vista presupuesto combinado Zurich", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-1164", "resumen": "Linea comercial Norden BI// Mejora al cotizador de Francisco Ciminari", "estado": "Pendiente - Desarrollo", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-1157", "resumen": "Operaciones Norden BI// Error Op 3.046.409", "estado": "Pendiente - Desarrollo", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-1149", "resumen": "Operaciones Norden BI// Interface Genérica de operaciones", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Nueva característica", "clave": "NS-1141", "resumen": "Operaciones Norden BI// Tipo de Endoso", "estado": "Pendiente - Desarrollo", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-1137", "resumen": "Linea comercial Norden BI// Servicios web de AP y venta Web", "estado": "Pendiente - Soporte", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-1134", "resumen": "Operaciones Norden BI// Interface de comisiones", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-1114", "resumen": "Operaciones Norden BI// Crosseling", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-1113", "resumen": "Operaciones Norden BI// Query Carga de operaciones", "estado": "Pendiente - Soporte", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-1112", "resumen": "Linea personas// Error 1647859 en cotización", "estado": "Pendiente - Desarrollo", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-1106", "resumen": "Operaciones Norden BI// Generica asegurados", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-1104", "resumen": "Operaciones Norden BI// Anulacion de operacion 2674638", "estado": "Pendiente - Soporte", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-1092", "resumen": "Operaciones Norden BI// Error al consultar operaciones FARMATODO ARGENTINA SA", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-1090", "resumen": "Linea Cobranza// Error en rubrica", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-1088", "resumen": "Linea comercial Norden BI// Error al vender el presupuesto 170613", "estado": "Finalizada", "prioridad": "Alta", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-1079", "resumen": "Operaciones Norden BI// OP 3011528 // ENDOSO 1 POLIZA N° 2963574 - ASEG. Maria R", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-1077", "resumen": "Novedades ART - Importacion", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-1074", "resumen": "Linea Administración Norden BI// ERROR AL PROCESAR LIQUIDACIONES", "estado": "Trabajo en curso", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-1073", "resumen": "Operaciones Norden BI// Interface cuotas con error", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-1072", "resumen": "Linea comercial Norden BI// Error en consulta de Operacion 3033537", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-1065", "resumen": "Cobranzas Norden BI// Interfaz Sancor Norden bi", "estado": "Pendiente - Desarrollo", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-1062", "resumen": "Operaciones Norden BI// Novedades Sancor seccion Incendio", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-1060", "resumen": "Linea comercial Norden BI// Error al descargar poliza y certificado en Emision P", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-1058", "resumen": "REPORTE DE POLIZAS VIGENTES - ERROR - No se puede bajar", "estado": "Finalizada", "prioridad": "Alta", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-1057", "resumen": "Linea comercial Norden BI// Error control gestion presupuesto 170305", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-1050", "resumen": "Operaciones Norden BI// Interface Mapeo de cliente incorrecto poliza 6046480// 6", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-1049", "resumen": "Linea comercial Norden BI// Cotizador AP Meridional diferencia", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-1047", "resumen": "Operaciones Norden BI// Cambio de sección por base", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-1044", "resumen": "INTERFACES DE COMISIONES - GRANIZO", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-1042", "resumen": "Linea comercial Norden BI// Cotizador campañas Galicia", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-1037", "resumen": "Operaciones Norden BI// Delate al renovar poliza", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-1036", "resumen": "Linea personas// Error en descarga de factura poliza 90006381496", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-1035", "resumen": "Operaciones Norden BI// Error en renovación realizada por interface poliza 96019", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-1034", "resumen": "Operaciones Norden BI// Interface Genérica de Operaciones", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-1033", "resumen": "INCLUSION EN INTERFACE DE NOVEDADES DE SACOR", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Nueva característica", "clave": "NS-1029", "resumen": "Control de Integridad para Clientes Críticos (Exclusiones)", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Nueva característica", "clave": "NS-1028", "resumen": "Identificación de \"Flotas\" como Producto dentro de la Sección Automotores", "estado": "Pendiente - Desarrollo", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Nueva característica", "clave": "NS-1027", "resumen": "Optimización de la Estructura de Ramos y Productos para Trazabilidad de Cartera", "estado": "Analisis funcional", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Nueva característica", "clave": "NS-1026", "resumen": "Automatización y Optimización de Carga (Infoauto / Infomoto)", "estado": "Analisis funcional", "prioridad": "Alta", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-1024", "resumen": "Operaciones Norden BI// Interface Novedades Mercantil", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-1023", "resumen": "Linea personas// Error en venta de presupuesto 169718", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-1022", "resumen": "Operaciones Norden BI// Cotizador Resultado Galicia", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-1020", "resumen": "Operaciones Norden BI// Error al cargar Id Productor", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-1009", "resumen": "INTERFACE SANCOR - REVISAR EMISION POLIZAS CERRADAS", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-1008", "resumen": "Operaciones Norden BI// Error en beneficios de cara al presupuesto", "estado": "Pendiente - Desarrollo", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-1003", "resumen": "Operaciones Norden BI// Interface Berkley secciones 037 y 022", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-1002", "resumen": "Query Asegurados duplicados", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-996", "resumen": "Reporte de Soporte solicitados por Jira", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-993", "resumen": "Operaciones Norden BI// Error en la consulta de un ID Ente Productor", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-971", "resumen": "Operaciones Norden BI// Error critico en comisiones subidas por interface Zurich", "estado": "Finalizada", "prioridad": "Urgente", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-970", "resumen": "Operaciones Norden BI// Norden BI con lag en diversas acciones", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-967", "resumen": "Actualiza Generica Cuenta Corriente - Excel", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-965", "resumen": "Comisiones - Mercantil - Transformar Archivos", "estado": "Pendiente - Soporte", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-964", "resumen": "Operaciones Norden BI// Error en cotizador para la Cia Allianz", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-962", "resumen": "Operaciones Norden BI// Error interface asegurados Zurich", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-960", "resumen": "Operaciones Norden BI// Error al descargar factura desde una operación Zúrich", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-957", "resumen": "Operaciones Norden BI// novedades Mercantil/ Zurich", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-948", "resumen": "REPORTE DE OPERACIONES PROCESADAS - ERROR", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-946", "resumen": "Operaciones Norden BI// cambio de seccion de poliza", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-945", "resumen": "Interface ATM", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-943", "resumen": "Operaciones Norden BI// Archivo correcciones interface de operaciones", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-940", "resumen": "Operaciones Norden BI// Cambio de cliente en la operacion 2986581", "estado": "Pendiente - Soporte", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-939", "resumen": "Operaciones Norden BI// Anulación de operación con liquidación", "estado": "Pendiente - Soporte", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-937", "resumen": "Operaciones Norden BI// cambio de sección por base", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-935", "resumen": "Operaciones Norden BI// registro interface poliza 24141", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-932", "resumen": "REFACTURACIONES - REPORTE - MODIFICACIONES", "estado": "Pendiente - Soporte", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-930", "resumen": "EMISION DUPLICADAS ZURICH", "estado": "Pendiente - Desarrollo", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-927", "resumen": "Operaciones Norden BI// novedades Sancor/ Zurich", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-924", "resumen": "INTERFACE SANCOR - PISA CLIENTE SI ES COASEGURADO", "estado": "Rechazado", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-917", "resumen": "INTERFACE DE ATM y REBOTES", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Solicitud enviada por correo electrónico", "clave": "NS-915", "resumen": "RE: Nuevo recurso Agus", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-914", "resumen": "Operaciones Norden BI// Error interface anulacion", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-913", "resumen": "Operaciones Norden BI// Poliza 23650", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-912", "resumen": "INTERFACE SAN CRISTOBAL ITEMS VEHICULOS y COBERTURAS", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-910", "resumen": "EMISION - INSPECCIONES - MERCANTIL ANDINA", "estado": "Pendiente - Desarrollo", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Solicitud enviada por correo electrónico", "clave": "NS-904", "resumen": "PLAN DE PAGO EN INTERFACES VARIAS", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-901", "resumen": "Operaciones Norden BI// Implementación de descarga de documentación Allianz", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-899", "resumen": "Operaciones Norden BI// Error la interface Experta", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-898", "resumen": "Operaciones Norden BI// Rehabilitación de operaciones", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-897", "resumen": "ERROR EN INTERFACE GENRICA DE OPERACIONES - ERROR ALTA NUEVA", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-896", "resumen": "INTERFACE DE PLAN DE PAGO", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-895", "resumen": "Operaciones Norden BI// Interface ATM", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-875", "resumen": "Operaciones Norden BI// Alta de pas CORTEZ JORGE DNI 17557794", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-866", "resumen": "Cobranzas Norden BI// Actualiza Genérica Cuenta Corriente", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-862", "resumen": "Agro Norden BI// Reprocesar las bajas de Items", "estado": "Pendiente - Soporte", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-861", "resumen": "Operaciones Norden BI// Interface correcciones", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-852", "resumen": "Operaciones Norden BI// Interface baja de registros", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-846", "resumen": "Operaciones Norden BI// Cambio de sección por base", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-845", "resumen": "Siniestro Norden BI// Bug en la carga de datos de tercero", "estado": "Finalizada", "prioridad": "Urgente", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-840", "resumen": "Linea comercial Norden BI// Error al cotizar moto", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-836", "resumen": "Operaciones Norden BI// Actualizacion interface", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-829", "resumen": "Operaciones Norden BI// Actualización nueva interface", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-826", "resumen": "Linea empresas Norden BI// Error al enviar BI", "estado": "Pendiente - Desarrollo", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-821", "resumen": "Linea empresas Norden BI// Error al modificar un items", "estado": "Rechazado", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-816", "resumen": "Operaciones Norden BI// Error en el cotizador Vendedor LAMOLINA, JUAN I", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-815", "resumen": "Linea personas// Error en búsqueda de prepuesto", "estado": "Pendiente - Desarrollo", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-800", "resumen": "Operaciones Norden BI// Error al descargar documentación", "estado": "Finalizada", "prioridad": "Alta", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-793", "resumen": "GENERICA COBRANZAS", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-790", "resumen": "Pedido de ALTAS de codigos en SANCOR, para Intergface de Novedades", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-786", "resumen": "INTERFACE DE ALLIANZ. - LEADS DE DDMT Y JIL", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-785", "resumen": "ITEM SIIN INGRESAR A LA OPERACION X INTERFACE", "estado": "Pendiente - Soporte", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Solicitud enviada por correo electrónico", "clave": "NS-783", "resumen": "RV: ERROR - ADELANTO DE COBERTURA", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-780", "resumen": "Carga de Aseguradora nueva y CLIENTE", "estado": "Finalizada", "prioridad": "Urgente", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-775", "resumen": "INTERFACE ZURICCH - CAUCION - RENOVACIONES", "estado": "Finalizada", "prioridad": "Alta", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-774", "resumen": "Error en ELIMINAR una operación", "estado": "Finalizada", "prioridad": "Urgente", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Solicitud enviada por correo electrónico", "clave": "NS-771", "resumen": "RV: No funciona INTERFACE Allianz", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-770", "resumen": "POLIZA de BERKELY con riesgo delante - No mpermite modificar número.", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-766", "resumen": "Operaciones Norden BI// Error en cotización Galicia", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-762", "resumen": "REPORTE DE OPERACIONES ANULADAS - EN PERIODOS 2020 a 2025", "estado": "Finalizada", "prioridad": "Alta", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-761", "resumen": "GRUPO EMPRESA - Agregar a cartera de Clientes de CLIPPER", "estado": "Finalizada", "prioridad": "Alta", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-760", "resumen": "Operaciones Norden BI// Error al cargar op con ID de Aseguradora", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-751", "resumen": "Operaciones Norden BI// Anulación de operación 2920136", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-748", "resumen": "Agro Norden BI// CONTACTOS DE PRODUCTORES", "estado": "Pendiente - Desarrollo", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-746", "resumen": "Agro Norden BI// Adelanto de coberturas", "estado": "Pendiente - Desarrollo", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-745", "resumen": "Agro Norden BI// INTERFACE", "estado": "Analisis funcional", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-744", "resumen": "Cobranza Norden BI// Problema con Liquidaciones en Norden Bi", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-737", "resumen": "Operaciones Norden BI// Error en la selección grupo vendedor", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-733", "resumen": "IINTERFACE DE ZURICH - Operaciones NO Ingresadas", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-720", "resumen": "Operaciones Norden BI// Error en emisioin de presupuesto 166698", "estado": "Finalizada", "prioridad": "Alta", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-716", "resumen": "Operaciones Norden BI// Mejoras Cotizador", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Solicitud enviada por correo electrónico", "clave": "NS-710", "resumen": "NOVEDADES BERKLEY", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-708", "resumen": "Operaciones Norden BI// Error en emisioin de presupuesto 166674", "estado": "Finalizada", "prioridad": "Alta", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-695", "resumen": "Operaciones Norden BI// Generica de Operaciones y Generica general", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-693", "resumen": "Operaciones Norden BI// Venta desde BI no registro la Operacion", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-686", "resumen": "Operaciones Norden BI// Cambio de cliente en las polizas  2949485 y 2934983", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-684", "resumen": "Operaciones Norden BI// Novedades interface", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-681", "resumen": "PASAR A CUIT IDCLIENTE 8323", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-679", "resumen": "Operaciones Norden BI// Multi cotizador", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-673", "resumen": "Agros Norden BI// Error al descargar reportes", "estado": "Finalizada", "prioridad": "Urgente", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-671", "resumen": "Agro Norden BI// INTERFACE MA", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-658", "resumen": "Operaciones Norden BI// Norden BI caido", "estado": "Finalizada", "prioridad": "Alta", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-651", "resumen": "Operaciones Norden BI// CONEXION WEB SERVICIES - PARA EMISIONES - COTIZACION- IN", "estado": "Rechazado", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Nueva característica", "clave": "NS-650", "resumen": "INTERF. C.TA C.TE AYUDA DE GASTOS - ZURICH - Varios ajustes a REVISAR de ser via", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-648", "resumen": "Linea comercial Norden BI// Cotizador Norden BI", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-641", "resumen": "Operaciones Norden BI// Error al emitir presupuesto 166011", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-639", "resumen": "Agro Norden BI// Error en alta adelanto de cobertura", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-628", "resumen": "Operaciones Norden BI// INTERFACE ATM", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-626", "resumen": "Operaciones Norden BI// Cambio de cliente en las polizas  2949485 y 2934983", "estado": "Pendiente - Desarrollo", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-625", "resumen": "Operaciones Norden BI// poliza 13515690", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-624", "resumen": "Operaciones Norden BI// Interface SG", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Solicitud enviada por correo electrónico", "clave": "NS-620", "resumen": "RV: Facturación", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-619", "resumen": "Operaciones Norden BI// Interface Novedades Zurich", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Solicitud enviada por correo electrónico", "clave": "NS-610", "resumen": "RV: DEMORAS PARA COTIZAR EN EL BI", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-601", "resumen": "Operaciones Norden BI// Solicitud de asocio Novedades Sancor", "estado": "Rechazado", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-599", "resumen": "Operaciones Norden BI// Novedades Experta", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-598", "resumen": "Operaciones Norden BI// Cotizador motos Sancor", "estado": "Finalizada", "prioridad": "Alta", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-595", "resumen": "Implementación de Prorrata Diaria en el Cálculo de Prima (Ajuste por Vigencia de", "estado": "Test", "prioridad": "Alta", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-589", "resumen": "Operaciones Norden BI// Zurich envio por interface poliza 96149365", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-580", "resumen": "Operaciones Norden BI// Interface Novedades Zurich", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Solicitud enviada por correo electrónico", "clave": "NS-575", "resumen": "RV: Altas Pza  10765354 - MUNICIPALIDAD DE LA COSTA", "estado": "Rechazado", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-567", "resumen": "Agro Norden BI// Descarga de formato Word denuncia de siniestro", "estado": "Pendiente - Desarrollo", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-566", "resumen": "Operaciones Norden BI// Bug al cargar ítem a operación", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-555", "resumen": "Linea comercial Norden BI// Cotizador COMBINADO FAMILIAR", "estado": "Finalizada", "prioridad": "Alta", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-552", "resumen": "Agro Norden BI// Anulación de operación 2807440", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-551", "resumen": "Operaciones Norden BI// Anulación de factura op 2746841", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-548", "resumen": "Linea comercial Norden BI// Cotizador Galicia campañas", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-547", "resumen": "Eliminar Vendedor por Duplicidad de Prima", "estado": "Rechazado", "prioridad": "Alta", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-546", "resumen": "REPORTE DE POLIZAS VIGENTES", "estado": "Pendiente - Desarrollo", "prioridad": "Alta", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-545", "resumen": "Operaciones Norden BI// Error al cotizar Allianz", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-543", "resumen": "Dashboard patrimoniales - Muestra un comportamiento diferente al seleccionar un ", "estado": "Finalizada", "prioridad": "Alta", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-542", "resumen": "Agro Norden BI// Anulación de Operaciones", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-541", "resumen": "Agro Norden BI// Error al editar Productor", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-540", "resumen": "Operaciones Norden BI// Anulación de factura op 2746841", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-539", "resumen": "Agro Norden BI// Adelanto de coberturas copiar", "estado": "Rechazado", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-538", "resumen": "Agro Norden BI// carga de archivos", "estado": "Test", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Solicitud enviada por correo electrónico", "clave": "NS-537", "resumen": "RV: ERROR EN EL BI", "estado": "Pendiente - Desarrollo", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-536", "resumen": "Operaciones Norden BI// Interface Siniestros", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-525", "resumen": "Operaciones Norden BI// CodSolicutud Sancor vacio", "estado": "Finalizada", "prioridad": "Alta", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-516", "resumen": "Linea comercial Quick BI// presupuesto Automotor", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-515", "resumen": "ERROR EN BUSQUEDA DE PAS/VENDEDOR", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-514", "resumen": "Operaciones Norden BI// consulta de pólizas", "estado": "Pendiente - Desarrollo", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-511", "resumen": "Operaciones Norden BI// Reporte de JIRA", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-508", "resumen": "Linea empresas Norden BI// Error en venta Sancor presupuesto 164732", "estado": "Finalizada", "prioridad": "Alta", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-501", "resumen": "PRODUCTOR VENDEDOR DUPLICADO", "estado": "Finalizada", "prioridad": "Urgente", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-500", "resumen": "Cobranzas Norden BI// Error al facturar un op", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-499", "resumen": "Linea comercial Norden BI// Emisión Galicia inspección", "estado": "Finalizada", "prioridad": "Alta", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-494", "resumen": "DEFAULT DE TIPO DE RENOVACION - TABLAS DE SEGUROS", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-493", "resumen": "COASEGURO", "estado": "Analisis funcional", "prioridad": "Alta", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-490", "resumen": "Operaciones Norden BI// Solicitud de emision", "estado": "Pendiente - Desarrollo", "prioridad": "Alta", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-488", "resumen": "ELIMINAR OPERACION PENDIENTE 2861835", "estado": "Finalizada", "prioridad": "Urgente", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-485", "resumen": "ART Norden BI// Cotizador ART carga de Asegurado", "estado": "Pendiente - Desarrollo", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-483", "resumen": "Agro Norden BI// Interface Enviar Orden Mercantil (Agro)", "estado": "Finalizada", "prioridad": "Alta", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-482", "resumen": "Operaciones Norden BI// Interfaces novedades", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-479", "resumen": "Operaciones Norden BI// Error al descargar poliza 30914409", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-478", "resumen": "BAJAR POLIZA - UNIFICADO - ERROR", "estado": "Finalizada", "prioridad": "Urgente", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-469", "resumen": "Operaciones Norden BI// Error al descargar poliza 30914409", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-468", "resumen": "Operaciones Norden BI// CONEXION WEB SERVICIES - PARA EMISIONES - BERKLEY AP", "estado": "Pendiente - Desarrollo", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-466", "resumen": "Operaciones Norden BI// CONEXION WEB SERVICIES - PARA EMISIONES - MERIDIONAL AP", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Solicitud enviada por correo electrónico", "clave": "NS-465", "resumen": "Prueba", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Solicitud enviada por correo electrónico", "clave": "NS-464", "resumen": "Prueba", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Solicitud enviada por correo electrónico", "clave": "NS-463", "resumen": "RV: Novedades NroPolizaUnificada - Ramo Caucion", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-454", "resumen": "Operaciones Norden BI// Configuración de mail", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-452", "resumen": "Linea comercial Norden BI// Error al registrar venta en \"ENVIAR BI\"", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-451", "resumen": "En EXCEL/ REPORTE- Informe operaciones procesadas", "estado": "Finalizada", "prioridad": "Urgente", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-450", "resumen": "Agro Norden BI// Adelanto de coberturas base clientes", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-449", "resumen": "Operaciones Norden BIUY// Modificación suma asegurada del bien", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-448", "resumen": "Asignación Automática de Productor al Asegurado (Cliente)", "estado": "Pendiente - Desarrollo", "prioridad": "Alta", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-441", "resumen": "ART Norden BI// Error en búsqueda de presupuesto", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-439", "resumen": "Operaciones Norden BI// Error al buscar por patente", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-437", "resumen": "Operaciones Norden BI// Anulación de operacion", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-434", "resumen": "ART Norden BI// Aseguradora Parana", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-431", "resumen": "Operaciones Norden BI// Anulación facturación OP poliza 515890336", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-425", "resumen": "Operaciones Norden BI// Solicitud de reporte informe de polizas vigentes", "estado": "Pendiente - Desarrollo", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-423", "resumen": "Linea comercial Norden BI// Cotizador Motos Galicia", "estado": "Pendiente - Desarrollo", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-422", "resumen": "Operaciones Norden BI// Crear ABM para ingresar el tipo de uso de un Auto", "estado": "Pendiente - Desarrollo", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-421", "resumen": "Linea comercial Norden BI// Cotizador Motos", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-420", "resumen": "Agro Norden BI// RECIBO DE PAGO GOUGY FELIX", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-413", "resumen": "Cotizador Galicia asistencia mecanica", "estado": "Pendiente - Desarrollo", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-406", "resumen": "Interface San Cristobal motivo de endoso", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-387", "resumen": "Anular factura de las Op de la póliza 947391", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-383", "resumen": "Confirmación gruesa 25-26 (MAIZ) Juamarita (Op RdlCarreras)", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-382", "resumen": "Error en agregar adicionales (Agro)", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-381", "resumen": "Formulario denuncia daño", "estado": "Analisis funcional", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-372", "resumen": "Exclusión de secciones interface", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-367", "resumen": "Error timeout al bajar excel de liquidaciones", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-362", "resumen": "Cambio de asegurado // Jira viene del NS- 84", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-354", "resumen": "Anulación de OP", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-353", "resumen": "Opción de detener las interfaces", "estado": "Rechazado", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-349", "resumen": "Mejora alta de Asegurados", "estado": "Analisis funcional", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-345", "resumen": "Adelanto de coberturas (Agro)", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-344", "resumen": "Novedades Zurich", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-338", "resumen": "Bajas de usuario en el Norden BI", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-329", "resumen": "Error al borrar Grupo de Vendedores", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-303", "resumen": "Emisión Sancor Quick diferencia en precios Presupuesto 163180 VERA RODRIGUEZ, HE", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-295", "resumen": "Inconsistencia en el cotizador", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-294", "resumen": "Integraciones y Comunicaciones ART", "estado": "Pendiente - Soporte", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-293", "resumen": "Funcionalidades de Identificación y Control ART", "estado": "Pendiente - Soporte", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-292", "resumen": "Parametrizaciones ART", "estado": "Pendiente - Soporte", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-291", "resumen": "Usabilidad y Búsqueda ART", "estado": "Pendiente - Soporte", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-290", "resumen": "Información para el Cliente ART", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-289", "resumen": "Gestión de Presupuestos ART", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-286", "resumen": "Error en búsqueda control gestión", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-283", "resumen": "ELIMINAR CLIENTE BODEGAS SALENTEIN EN DETALLE DE CARGA DE OPERACIONES", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-281", "resumen": "Cotizador Meridional", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-280", "resumen": "PRIORIDADES", "estado": "Finalizada", "prioridad": "Alta", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-279", "resumen": "Borrar pendiente presupuestos ART", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-272", "resumen": "Error al realizar diversas acciones en el Norden BI", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-270", "resumen": "Enviar BI Meridional", "estado": "Pendiente - Desarrollo", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-269", "resumen": "Conectar cotizador Combinado familiar Zurich", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-267", "resumen": "Reporte análisis de operaciones", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-265", "resumen": "Detalles de Operación Número 2816726", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-264", "resumen": "Error al cotizar con diversos pas", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-256", "resumen": "Error en alta de operación presupuesto 162986", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-245", "resumen": "Botonera para anular Op Asegurado CENTRO CRISTIANO INTERNACIONAL", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-235", "resumen": "Error al consultar ID Productor", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-234", "resumen": "Vehículos asegurados // Pólizas vigentes y anuladas", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-221", "resumen": "Registro en la interface \"Esquema comisionario\"", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-219", "resumen": "Error al buscar por patente", "estado": "Finalizada", "prioridad": "Urgente", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-218", "resumen": "Error 500 al cotizar Sancor", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-216", "resumen": "Error al descargar DS póliza 96151796", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-215", "resumen": "Error en emisión Mercantil", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-209", "resumen": "EMISION MERIDIONAL AUTOMOTORES y MOTOS", "estado": "Pendiente - Desarrollo", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-207", "resumen": "Interface caución Zúrich", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-204", "resumen": "Permiso habilitar envía BI Meridional", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-203", "resumen": "Histórico agosto 2024 a la fecha para San Cristóbal", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-197", "resumen": "Interface producto y seccion Bitrix 6356", "estado": "Pendiente - Desarrollo", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-196", "resumen": "CONTROL REPORTE POLIZAS VIGENTES", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-192", "resumen": "CAMBIO DE CLIENTE OP 2804718", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-191", "resumen": "Pendiente de carga, del Control de Cta Cte.", "estado": "Pendiente - Desarrollo", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-189", "resumen": "Interface Granizo (Agro) Sancor", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Nueva característica", "clave": "NS-186", "resumen": "INICIO - CONFIGURADOR DE ELEMENTOS", "estado": "Pendiente - Desarrollo", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-185", "resumen": "Adjunto de fotos al momento de emitir", "estado": "Pendiente - Desarrollo", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Solicitud enviada por correo electrónico", "clave": "NS-178", "resumen": "RV: CARGA EXCEL DEUDORES | Bitrix", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-166", "resumen": "INTERFACE / CONTROL CTA CTE / CTA CTE PENDIENTE", "estado": "Rechazado", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-165", "resumen": "Sancor cobertura Max Incendio", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-158", "resumen": "Federación Patronal cotizador", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-154", "resumen": "Novedades Galicia", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-150", "resumen": "Poliza 670898 coberturas en los items", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-137", "resumen": "Timeout en búsqueda Solicitudes de Emisión - Automotor x presupuesto", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-136", "resumen": "Interface Sancor Novedades", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-135", "resumen": "Interface Enviar Orden Allianz (Agro)", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-134", "resumen": "PROBLEMA CON INICIO VIGENCIA DE POLIZA", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-127", "resumen": "Reporte de Soporte solicitados por Jira", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-124", "resumen": "COMPARATIVO - COTIZADOR AUTOS", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-118", "resumen": "Meridional //Mínimo Descuento/Recargo y Máximo Descuento/Recargo", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-115", "resumen": "EN cambio de productor error", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-110", "resumen": "Movimiento de rehabilitación de póliza en Sancor", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-108", "resumen": "Agrega un motor de búsqueda por matricula de cias", "estado": "Rechazado", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-107", "resumen": "RESULTADO DE CAMBIO DE PAS - CON ERROR", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-106", "resumen": "Interface Sancor endosos", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-104", "resumen": "MODIFICA SEGMENTACION", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-95", "resumen": "Error en reporte deuda por cliente agro", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-91", "resumen": "CodTarjetaCredito vacio en Sancor", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-86", "resumen": "Analizar Pendientes Generica", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-85", "resumen": "Tilde de liquidación en Operaciones", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-84", "resumen": "CORREGIR EL ID DE VENDEDOR", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-81", "resumen": "Error al cotizar", "estado": "Finalizada", "prioridad": "Alta", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-75", "resumen": "Error en permisos grupo Productores y Productores- Venta", "estado": "Rechazado", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-74", "resumen": "REPORTE DE Informe operaciones procesadas", "estado": "Planificado", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-64", "resumen": "CARGA DE ITEMS EN RAMO SEGURO TECNICO", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-58", "resumen": "EN X 195-005-96226119-3", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-57", "resumen": "Modificar coberturas hogar premium", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-56", "resumen": "Movimiento Reverso de renovación Sancor", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-55", "resumen": "Modificar y Cargar Cliente que tambien es Aseguradora", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-52", "resumen": "Error al cargar un ente", "estado": "Finalizada", "prioridad": "Alta", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-51", "resumen": "EDICION COBERTURAS - TABLAS DE CONVERSION", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-49", "resumen": "error en alta de productor", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-48", "resumen": "Cotizador Productos Cotizar Allianz Integral Hogar", "estado": "Análisis técnico", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-47", "resumen": "RE: Agro: Adelanto de cobertura: Estimación", "estado": "Rechazado", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Nueva característica", "clave": "NS-44", "resumen": "BUSQUEDA PAARCIAL de un Numero de Poliza/Operaciones", "estado": "Pendiente - Desarrollo", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-41", "resumen": "ERRORES INTERFACE - String or binary data would be truncated. The statement has ", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-40", "resumen": "LOZANO_ZURICH_LL ( 55586 )", "estado": "Rechazado", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-39", "resumen": "CREAR CUENTA DE MAIL PARA VOTA, ALESIA MARINA ( 63469 )", "estado": "Rechazado", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-37", "resumen": "INTERFACE DE NOVEDADES SANCOR", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Error", "clave": "NS-36", "resumen": "ELIMINAR O UNIFICAR ASEGURADORA NACION SEGUROS", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-35", "resumen": "CONEXION SERVICIOS WEB - PROVINCIA SEGUROS", "estado": "Pendiente - Desarrollo", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-34", "resumen": "Eliminar Operación Número 2556422", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-33", "resumen": "ELIMINAR Operación Número 2624639", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-32", "resumen": "ELIMINAR OPERACION Detalles de Operación Número 2493743", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-31", "resumen": "Inconsistencia en filtro de búsqueda Coberturas", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-30", "resumen": "REHABILITAR OPERACION 2699457", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-29", "resumen": "Interface Sancor", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-28", "resumen": "Operación N° 2725036", "estado": "Rechazado", "prioridad": "Urgente", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-27", "resumen": "REVISAR INTERFACE DE ZURICH CAUCION", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-26", "resumen": "INTERFACE ATM", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-25", "resumen": "BAJAR ESTADO DE SOPORTES GENERADOS", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}, {"tipo": "Soporte", "clave": "NS-24", "resumen": "INTERFACE SANCOR - NOVEDADES - GENERICA OPERACIONES", "estado": "Finalizada", "prioridad": "Media", "horas_min": 10, "horas_asignadas": 0, "ok": false}];
+let charts = {};
+
+// ── TABS ──
+function switchTab(i){
+  document.querySelectorAll('.tab').forEach((t,j)=>t.classList.toggle('active',i===j));
+  document.querySelectorAll('.section').forEach((s,j)=>s.classList.toggle('active',i===j));
+  if(i===0) updateResumen();
+  if(i===1) updateHoras();
+  if(i===2) renderJiraTable();
+}
+
+// ── UPLOAD ──
+function handleFile(file){
+  if(!file) return;
+  const st = document.getElementById('uploadStatus');
+  st.className='upload-status'; st.textContent='Procesando...';
+  const reader = new FileReader();
+  reader.onload = e => {
+    try{
+      const wb = XLSX.read(e.target.result,{type:'array'});
+      const sn = wb.SheetNames.find(n=>n.toLowerCase().includes('dato')||n.toLowerCase().includes('jira'))||wb.SheetNames[0];
+      const json = XLSX.utils.sheet_to_json(wb.Sheets[sn],{header:1,defval:''});
+      let hr=-1,ct=-1,ce=-1,ck=-1,cr=-1,cp=-1;
+      for(let i=0;i<Math.min(json.length,10);i++){
+        const row=json[i].map(c=>String(c).toLowerCase());
+        const ti=row.findIndex(c=>c.includes('tipo'));
+        const ei=row.findIndex(c=>c.includes('estado'));
+        if(ti>=0&&ei>=0){hr=i;ct=ti;ce=ei;
+          ck=row.findIndex(c=>c.includes('clave'));
+          cr=row.findIndex(c=>c.includes('resumen'));
+          cp=row.findIndex(c=>c.includes('prioridad'));
+          break;}
+      }
+      if(hr===-1) throw new Error('No se encontraron columnas requeridas');
+      const prev={};
+      RAW.forEach(r=>{prev[r.clave]={horas_min:r.horas_min,horas_asignadas:r.horas_asignadas,ok:r.ok};});
+      const nd=[];
+      for(let i=hr+1;i<json.length;i++){
+        const tipo=String(json[i][ct]||'').trim();
+        const est=String(json[i][ce]||'').trim();
+        if(!tipo||!est) continue;
+        const clave=ck>=0?String(json[i][ck]||'').trim():'';
+        const p=prev[clave]||{};
+        nd.push({tipo,clave,resumen:cr>=0?String(json[i][cr]||'').trim().slice(0,80):'',
+          estado:est,prioridad:cp>=0?String(json[i][cp]||'').trim():'',
+          horas_min:p.horas_min||10,horas_asignadas:p.horas_asignadas||0,ok:p.ok||false});
+      }
+      if(!nd.length) throw new Error('Sin datos válidos');
+      RAW=nd;
+      rebuildFilters();
+      updateResumen(); updateHoras(); renderJiraTable();
+      st.className='upload-status ok'; st.textContent='\u2713 '+RAW.length+' tickets cargados';
+    }catch(err){st.className='upload-status err';st.textContent='\u2717 '+err.message;}
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function rebuildFilters(){
+  const tipos=[...new Set(RAW.map(r=>r.tipo))].sort();
+  const estados=[...new Set(RAW.map(r=>r.estado))].sort();
+  ['f0tipo','j2tipo'].forEach(id=>{
+    const s=document.getElementById(id);
+    const v=s.value;
+    s.innerHTML='<option value="">Todos</option>'+tipos.map(t=>`<option value="${t}">${t}</option>`).join('');
+    s.value=v;
+  });
+  ['f0estado','j2estado'].forEach(id=>{
+    const s=document.getElementById(id);
+    const v=s.value;
+    s.innerHTML='<option value="">Todos</option>'+estados.map(e=>`<option value="${e}">${e}</option>`).join('');
+    s.value=v;
+  });
+  document.getElementById('headerCount').textContent=RAW.length+' tickets';
+}
+
+// ── TAB 0: RESUMEN ──
+function filteredResumen(){
+  const t=document.getElementById('f0tipo').value;
+  const e=document.getElementById('f0estado').value;
+  return RAW.filter(r=>(!t||r.tipo===t)&&(!e||r.estado===e));
+}
+function countBy(data,key){const m={};data.forEach(r=>{m[r[key]]=(m[r[key]]||0)+1;});return m;}
+
+function updateResumen(){
+  const data=filteredResumen(), total=data.length;
+  if(!total) return;
+  const fin=data.filter(r=>r.estado==='Finalizada').length;
+  const pend=data.filter(r=>r.estado.startsWith('Pendiente')).length;
+  const proc=data.filter(r=>!['Finalizada','Rechazado'].includes(r.estado)&&!r.estado.startsWith('Pendiente')).length;
+  const rech=data.filter(r=>r.estado==='Rechazado').length;
+
+  document.getElementById('k0total').textContent=total;
+  document.getElementById('k0fin').textContent=fin;   document.getElementById('k0finp').textContent=Math.round(fin/total*100)+'%';
+  document.getElementById('k0pend').textContent=pend; document.getElementById('k0pendp').textContent=Math.round(pend/total*100)+'%';
+  document.getElementById('k0proc').textContent=proc; document.getElementById('k0procp').textContent=Math.round(proc/total*100)+'%';
+  document.getElementById('k0rech').textContent=rech; document.getElementById('k0rechp').textContent=Math.round(rech/total*100)+'%';
+  document.getElementById('f0count').textContent='Mostrando '+total+' de '+RAW.length+' tickets';
+
+  // Chart A — barras tipo
+  const bt=countBy(data,'tipo');
+  const tKeys=Object.keys(bt).sort((a,b)=>bt[b]-bt[a]);
+  drawChart('ch0a','bar',tKeys.map(t=>TIPO_SHORT[t]||t),tKeys.map(t=>bt[t]),tKeys.map(t=>clr(t,TIPO_C)),'leg0a',tKeys,bt);
+
+  // Chart B — dona estado
+  const be=countBy(data,'estado');
+  const eKeys=Object.keys(be).sort((a,b)=>be[b]-be[a]);
+  drawDoughnut('ch0b',eKeys,eKeys.map(e=>be[e]),eKeys.map(e=>clr(e,ESTADO_C)),'leg0b');
+
+  // Chart C — barras apiladas tipo x estado
+  const estados=[...new Set(data.map(r=>r.estado))].sort();
+  const tipos=[...new Set(data.map(r=>r.tipo))].sort();
+  const datasets=estados.map(est=>({
+    label:est,
+    data:tipos.map(t=>data.filter(r=>r.tipo===t&&r.estado===est).length),
+    backgroundColor:clr(est,ESTADO_C)+'CC',
+    borderRadius:2
+  }));
+  if(charts['ch0c']) charts['ch0c'].destroy();
+  charts['ch0c']=new Chart(document.getElementById('ch0c'),{
+    type:'bar',
+    data:{labels:tipos.map(t=>TIPO_SHORT[t]||t),datasets},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+      scales:{x:{stacked:true,grid:{display:false}},y:{stacked:true,beginAtZero:true,ticks:{precision:0,color:'#888'},grid:{color:'#f0f0f0'}}}}
+  });
+  const legC=document.getElementById('leg0c');
+  legC.innerHTML=estados.map(e=>`<span class="leg"><span class="leg-dot" style="background:${clr(e,ESTADO_C)}"></span>${e}</span>`).join('');
+
+  // Tabla cruzada transpuesta: filas=estados, cols=tipos
+  const allEstados=[...new Set(RAW.map(r=>r.estado))].sort();
+  const allTipos=[...new Set(RAW.map(r=>r.tipo))].sort();
+  const pivot={};
+  allEstados.forEach(e=>{pivot[e]={};allTipos.forEach(t=>{pivot[e][t]=0;});});
+  data.forEach(r=>{if(pivot[r.estado]) pivot[r.estado][r.tipo]=(pivot[r.estado][r.tipo]||0)+1;});
+  const maxV=Math.max(...allEstados.map(e=>allTipos.map(t=>pivot[e][t]||0)).flat(),1);
+
+  let html=`<table><thead><tr><th>Estado</th>${allTipos.map(t=>`<th>${TIPO_SHORT[t]||t}</th>`).join('')}<th>Total fila</th></tr></thead><tbody>`;
+  allEstados.forEach(est=>{
+    const rowTotal=allTipos.reduce((s,t)=>s+(pivot[est][t]||0),0);
+    if(!rowTotal) return;
+    html+=`<tr><td><span class="badge" style="background:${clr(est,ESTADO_C)}22;color:${clr(est,ESTADO_C)}">${est}</span></td>`;
+    allTipos.forEach(tipo=>{
+      const v=pivot[est][tipo]||0;
+      const bw=Math.round(v/maxV*45);
+      const col=clr(tipo,TIPO_C);
+      html+=`<td><div class="bar-cell"><span class="mini-bar" style="width:${bw}px;background:${col};opacity:.6"></span><span style="color:${v?col:'#ccc'};font-weight:${v?700:400}">${v||'—'}</span></div></td>`;
+    });
+    html+=`<td style="font-weight:700;color:#1E3A5F">${rowTotal}</td></tr>`;
+  });
+  const colTotals=allTipos.map(t=>data.filter(r=>r.tipo===t).length);
+  html+=`</tbody><tfoot><tr><td>TOTAL</td>${colTotals.map(v=>`<td>${v}</td>`).join('')}<td>${total}</td></tr></tfoot></table>`;
+  document.getElementById('crossTable').innerHTML=html;
+}
+
+function drawChart(id,type,labels,vals,colors,legId,keys,counts){
+  if(charts[id]) charts[id].destroy();
+  charts[id]=new Chart(document.getElementById(id),{
+    type,data:{labels,datasets:[{data:vals,backgroundColor:colors,borderRadius:4,borderSkipped:false}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+      scales:{x:{grid:{display:false}},y:{beginAtZero:true,ticks:{precision:0,color:'#888'},grid:{color:'#f0f0f0'}}}}
+  });
+  if(legId) document.getElementById(legId).innerHTML=keys.map((k,i)=>
+    `<span class="leg"><span class="leg-dot" style="background:${colors[i]}"></span>${TIPO_SHORT[k]||k} <b>${counts[k]}</b></span>`).join('');
+}
+function drawDoughnut(id,labels,vals,colors,legId){
+  if(charts[id]) charts[id].destroy();
+  charts[id]=new Chart(document.getElementById(id),{
+    type:'doughnut',data:{labels,datasets:[{data:vals,backgroundColor:colors,borderWidth:2,borderColor:'#fff'}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},cutout:'58%'}
+  });
+  if(legId) document.getElementById(legId).innerHTML=labels.map((l,i)=>
+    `<span class="leg"><span class="leg-dot" style="background:${colors[i]}"></span>${l} <b>${vals[i]}</b></span>`).join('');
+}
+
+// ── TAB 1: HORAS ──
+function updateHoras(){
+  const acordadas=parseFloat(document.getElementById('horasAcordadas').value)||0;
+  const usadas=RAW.filter(r=>r.ok).reduce((s,r)=>s+(r.horas_asignadas||r.horas_min||10),0);
+  const restantes=Math.max(0,acordadas-usadas);
+  const pctU=acordadas?Math.min(100,Math.round(usadas/acordadas*100)):0;
+
+  document.getElementById('horasUsadas').textContent=usadas;
+  document.getElementById('horasRestantes').textContent=restantes;
+  document.getElementById('pbUsadas').style.width=pctU+'%';
+  document.getElementById('pbRestantes').style.width=Math.max(0,100-pctU)+'%';
+  document.getElementById('pctUsadas').textContent=pctU+'% de las horas acordadas';
+  document.getElementById('pctRestantes').textContent=Math.max(0,100-pctU)+'% disponible';
+
+  // Estimativos
+  const pendSinOk=RAW.filter(r=>!r.ok&&r.estado!=='Finalizada'&&r.estado!=='Rechazado');
+  const horasNecesarias=pendSinOk.reduce((s,r)=>s+(r.horas_min||10),0);
+  const jirasQueEntran=Math.floor(restantes/10);
+  const delta=restantes-horasNecesarias;
+
+  document.getElementById('estJirasRestantes').textContent=jirasQueEntran;
+  document.getElementById('estJirasPendientes').textContent=pendSinOk.length;
+  document.getElementById('estHorasPendientes').textContent=horasNecesarias;
+  const dEl=document.getElementById('estDelta');
+  dEl.textContent=(delta>=0?'+':'')+delta;
+  dEl.style.color=delta>=0?'#27AE60':'#E24B4A';
+
+  // Burn-down chart
+  const labels=['Acordadas','Usadas (OK)','Restantes','Necesarias (pendientes)'];
+  const vals=[acordadas,usadas,restantes,horasNecesarias];
+  const cols=['#2E6DA4','#27AE60','#4A9FD4','#E67E22'];
+  if(charts['chBurn']) charts['chBurn'].destroy();
+  charts['chBurn']=new Chart(document.getElementById('chBurn'),{
+    type:'bar',
+    data:{labels,datasets:[{data:vals,backgroundColor:cols,borderRadius:5,borderSkipped:false}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+      scales:{x:{grid:{display:false}},y:{beginAtZero:true,ticks:{precision:0,color:'#888'},grid:{color:'#f0f0f0'}}}}
+  });
+
+  // Horas por tipo
+  const tipos=[...new Set(RAW.map(r=>r.tipo))].sort();
+  const horasTipo=tipos.map(t=>RAW.filter(r=>r.tipo===t&&r.ok).reduce((s,r)=>s+(r.horas_asignadas||r.horas_min||10),0));
+  const tColors=tipos.map(t=>clr(t,TIPO_C));
+  if(charts['chHoras']) charts['chHoras'].destroy();
+  charts['chHoras']=new Chart(document.getElementById('chHoras'),{
+    type:'bar',
+    data:{labels:tipos.map(t=>TIPO_SHORT[t]||t),datasets:[{data:horasTipo,backgroundColor:tColors,borderRadius:5,borderSkipped:false}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+      scales:{x:{grid:{display:false}},y:{beginAtZero:true,ticks:{precision:0,color:'#888'},grid:{color:'#f0f0f0'}}}}
+  });
+  document.getElementById('legHoras').innerHTML=tipos.map((t,i)=>
+    `<span class="leg"><span class="leg-dot" style="background:${tColors[i]}"></span>${TIPO_SHORT[t]||t} <b>${horasTipo[i]}hs</b></span>`).join('');
+}
+
+// ── TAB 2: PLANIFICADOR ──
+function filteredJira(){
+  const q=document.getElementById('jiraSearch').value.toLowerCase();
+  const t=document.getElementById('j2tipo').value;
+  const e=document.getElementById('j2estado').value;
+  const ok=document.getElementById('j2ok').value;
+  return RAW.filter(r=>{
+    if(t&&r.tipo!==t) return false;
+    if(e&&r.estado!==e) return false;
+    if(ok==='ok'&&!r.ok) return false;
+    if(ok==='nok'&&r.ok) return false;
+    if(q&&![r.clave,r.tipo,r.estado,r.resumen].join(' ').toLowerCase().includes(q)) return false;
+    return true;
+  });
+}
+
+function renderJiraTable(){
+  const data=filteredJira();
+  const tbody=document.getElementById('jiraBody');
+  tbody.innerHTML=data.map((r,i)=>{
+    const idx=RAW.indexOf(r);
+    const tColor=clr(r.tipo,TIPO_C);
+    const eColor=clr(r.estado,ESTADO_C);
+    return `<tr>
+      <td><b style="color:#2E6DA4">${r.clave||'—'}</b></td>
+      <td><span class="badge" style="background:${tColor}22;color:${tColor}">${TIPO_SHORT[r.tipo]||r.tipo}</span></td>
+      <td><span class="badge" style="background:${eColor}22;color:${eColor}">${r.estado}</span></td>
+      <td style="color:#888;font-size:10px">${r.prioridad||'—'}</td>
+      <td style="max-width:280px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${r.resumen}">${r.resumen||'—'}</td>
+      <td><input type="number" class="inp-h" min="1" value="${r.horas_min}" onchange="RAW[${idx}].horas_min=+this.value;updateHoras()" title="Mínimo de horas estimadas"></td>
+      <td><input type="number" class="inp-h" min="0" value="${r.horas_asignadas}" onchange="RAW[${idx}].horas_asignadas=+this.value;updateHoras()" title="Horas asignadas al trabajo"></td>
+      <td style="text-align:center"><input type="checkbox" class="chk-ok" ${r.ok?'checked':''} onchange="RAW[${idx}].ok=this.checked;updateHoras();renderJiraTable()" title="Marcar como aprobado"></td>
+    </tr>`;
+  }).join('');
+  document.getElementById('jiraCount').textContent='Mostrando '+data.length+' de '+RAW.length+' tickets';
+}
+
+function exportExcel(){
+  const ws=XLSX.utils.json_to_sheet(RAW.map(r=>({
+    'Clave':r.clave,'Tipo de Incidencia':r.tipo,'Estado':r.estado,
+    'Prioridad':r.prioridad,'Resumen':r.resumen,
+    'Hs. mínimas':r.horas_min,'Hs. asignadas':r.horas_asignadas,
+    'OK / Aprobado':r.ok?'Sí':'No'
+  })));
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'Planificación');
+  XLSX.writeFile(wb,'Planificacion_Soporte_Norden.xlsx');
+}
+
+// ── INIT ──
+rebuildFilters();
+updateResumen();
+</script>
+</body>
+</html>
