@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Dashboard Soporte — Norden Brokers</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#f0f4f8;color:#1e293b;}
+header{background:linear-gradient(135deg,#1e3a5f 0%,#1a5276 55%,#2980b9 100%);color:#fff;padding:14px 24px;display:flex;align-items:center;gap:18px;}
+.divider-v{width:1px;height:44px;background:rgba(255,255,255,.3);}
+.header-text h1{font-size:1.1rem;font-weight:700;}
+.header-text p{font-size:.74rem;opacity:.72;margin-top:3px;}
+.badge{background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:4px 14px;font-size:.75rem;margin-left:auto;white-space:nowrap;font-weight:600;}
+nav{display:flex;background:#fff;border-bottom:2px solid #e2e8f0;padding:0 20px;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.06);overflow-x:auto;}
+nav button{padding:12px 16px;border:none;background:none;cursor:pointer;font-size:.82rem;font-weight:600;color:#64748b;border-bottom:3px solid transparent;transition:.15s;white-space:nowrap;}
+nav button.active{color:#1a5276;border-bottom-color:#4BBFEA;}
+nav button:hover:not(.active){color:#1e293b;}
+.tab{display:none;padding:20px;max-width:1400px;margin:0 auto;}
+.tab.active{display:block;}
+.kpi-row{display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap;}
+.kpi{background:#fff;border-radius:12px;padding:14px 18px;flex:1;min-width:130px;box-shadow:0 1px 4px rgba(0,0,0,.08);border-left:4px solid #1a5276;}
+.kpi.green{border-color:#22c55e;}.kpi.sky{border-color:#4BBFEA;}.kpi.orange{border-color:#f59e0b;}.kpi.purple{border-color:#8b5cf6;}
+.kpi-val{font-size:1.75rem;font-weight:800;line-height:1;}
+.kpi-lbl{font-size:.69rem;color:#64748b;margin-top:4px;text-transform:uppercase;letter-spacing:.05em;}
+.charts-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;}
+.card{background:#fff;border-radius:12px;padding:18px;box-shadow:0 1px 4px rgba(0,0,0,.08);}
+.card h3{font-size:.78rem;color:#64748b;text-transform:uppercase;letter-spacing:.06em;margin-bottom:14px;font-weight:700;}
+.svg-chart{width:100%;overflow:visible;}
+.xtable-wrap{overflow-x:auto;}
+table.xt{border-collapse:collapse;width:100%;font-size:.75rem;}
+table.xt th,table.xt td{border:1px solid #e2e8f0;padding:6px 8px;text-align:center;}
+table.xt th{background:#1e3a5f;color:#fff;white-space:nowrap;font-weight:600;}
+table.xt tr:nth-child(even) td{background:#f8fafc;}
+table.xt td.lbl{background:#f1f5f9;font-weight:600;text-align:left;color:#334155;white-space:nowrap;}
+table.xt td.total{background:#dbeafe;font-weight:700;}
+table.xt th.total{background:#1e40af;}
+.upload-zone{border:2px dashed #94a3b8;border-radius:12px;padding:24px;text-align:center;cursor:pointer;transition:.2s;margin-top:16px;}
+.upload-zone:hover{border-color:#4BBFEA;background:#f0f9ff;}
+.upload-zone p{color:#64748b;font-size:.82rem;margin-top:6px;}
+#moverlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;display:none;justify-content:center;align-items:flex-start;padding:40px 16px;overflow-y:auto;}
+#moverlay.open{display:flex;}
+#mbox{background:#fff;border-radius:16px;width:100%;max-width:920px;padding:24px;position:relative;max-height:85vh;overflow-y:auto;}
+#mbox h2{font-size:.95rem;font-weight:700;margin-bottom:3px;}
+#mbox .msub{font-size:.75rem;color:#64748b;margin-bottom:14px;}
+#mbox table{width:100%;border-collapse:collapse;font-size:.76rem;}
+#mbox table th{background:#1e3a5f;color:#fff;padding:8px 10px;text-align:left;white-space:nowrap;}
+#mbox table td{padding:6px 10px;border-bottom:1px solid #e2e8f0;vertical-align:top;}
+#mbox table tr:nth-child(even) td{background:#f8fafc;}
+.close-btn{position:absolute;top:12px;right:14px;border:none;background:none;font-size:1.5rem;cursor:pointer;color:#64748b;line-height:1;}
+.pill{display:inline-block;padding:2px 8px;border-radius:20px;font-size:.67rem;font-weight:600;}
+.hrs-config{background:#fff;border-radius:12px;padding:16px 18px;box-shadow:0 1px 4px rgba(0,0,0,.08);margin-bottom:16px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
+.hrs-config label{font-size:.83rem;font-weight:600;}
+.hrs-config input[type=number]{border:1.5px solid #cbd5e1;border-radius:8px;padding:6px 10px;font-size:.88rem;width:110px;}
+.hrs-bar{background:#e2e8f0;border-radius:20px;height:16px;overflow:hidden;margin:10px 0;}
+.hrs-fill{height:100%;border-radius:20px;background:linear-gradient(90deg,#22c55e,#4BBFEA);transition:width .4s;}
+.hrs-stats{display:flex;gap:20px;font-size:.8rem;flex-wrap:wrap;margin-top:4px;}
+.hrs-stats span b{font-size:1rem;}
+table.jira-tbl{width:100%;border-collapse:collapse;font-size:.76rem;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.08);}
+table.jira-tbl th{background:#1e3a5f;color:#fff;padding:8px 10px;text-align:left;white-space:nowrap;}
+table.jira-tbl td{padding:7px 10px;border-bottom:1px solid #e2e8f0;vertical-align:middle;}
+table.jira-tbl tr:nth-child(even) td{background:#f8fafc;}
+table.jira-tbl input[type=number]{width:66px;border:1px solid #cbd5e1;border-radius:6px;padding:3px 6px;font-size:.76rem;}
+table.jira-tbl input[type=checkbox]{width:16px;height:16px;cursor:pointer;}
+.search-box{display:flex;gap:10px;margin-bottom:16px;}
+.search-box input{flex:1;border:1.5px solid #cbd5e1;border-radius:10px;padding:9px 14px;font-size:.88rem;outline:none;}
+.search-box input:focus{border-color:#4BBFEA;}
+.search-box button{background:#1a5276;color:#fff;border:none;border-radius:10px;padding:9px 22px;cursor:pointer;font-weight:600;font-size:.84rem;}
+.search-box button:hover{background:#4BBFEA;}
+.result-card{background:#fff;border-radius:10px;padding:14px 18px;margin-bottom:10px;box-shadow:0 1px 4px rgba(0,0,0,.08);}
+.rc-key{font-size:.82rem;font-weight:800;color:#1a5276;}
+.rc-res{font-size:.82rem;margin:4px 0;}
+.rc-meta{font-size:.71rem;color:#64748b;}
+mark{background:#fef08a;border-radius:3px;padding:0 2px;}
+.btn{border:none;border-radius:8px;padding:8px 18px;cursor:pointer;font-weight:600;font-size:.82rem;margin-right:8px;}
+.btn-green{background:#22c55e;color:#fff;}.btn-blue{background:#1a5276;color:#fff;}
+.btn-green:hover{background:#16a34a;}.btn-blue:hover{background:#4BBFEA;}
+.filter-row{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center;}
+.filter-row input,.filter-row select{border:1.5px solid #cbd5e1;border-radius:8px;padding:7px 10px;font-size:.8rem;}
+@media(max-width:680px){.charts-row{grid-template-columns:1fr;}.kpi-row{gap:8px;}}
+</style>
+</head>
+<body>
+<header>
+  <div><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 190 62" width="170" height="56" aria-label="Norden Brokers"><polygon points="22,24 32,11 42,24 39,24 32,16 25,24" fill="#4BBFEA"/><text x="52" y="27" font-family="'Segoe UI',Arial,sans-serif" font-weight="800" font-size="19" fill="#ffffff" letter-spacing="-0.5">Norden</text><text x="52" y="46" font-family="'Segoe UI',Arial,sans-serif" font-weight="800" font-size="19" fill="#ffffff" letter-spacing="-0.5">Brokers</text><text x="52" y="58" font-family="'Segoe UI',Arial,sans-serif" font-weight="600" font-size="7.5" fill="rgba(255,255,255,0.72)" letter-spacing="0.1em">ASESORES EN SEGUROS</text></svg></div>
+  <div class="divider-v"></div>
+  <div class="header-text">
+    <h1>Dashboard de Soporte</h1>
+    <p>Gestión de incidencias y planificación de recursos</p>
+  </div>
+  <span class="badge" id="totalBadge">507 tickets</span>
+</header>
+<nav>
+  <button class="active" onclick="showTab('resumen',this)">📊 Resumen General</button>
+  <button onclick="showTab('horas',this)">⏱ Gestión de Horas</button>
+  <button onclick="showTab('planif',this)">📋 Planificador Jiras</button>
+  <button onclick="showTab('buscar',this)">🔍 Consultar Ticket</button>
+</nav>
+<div id="tab-resumen" class="tab active">
+  <div class="kpi-row" id="kpiRow"></div>
+  <div class="charts-row">
+    <div class="card"><h3>Por Tipo de Incidencia</h3><div id="chartTipo"></div></div>
+    <div class="card"><h3>Por Estado</h3><div id="chartEstado"></div></div>
+  </div>
+  <div class="card" style="margin-bottom:16px;">
+    <h3>Tabla Cruzada: Tipo × Estado</h3>
+    <div class="xtable-wrap" id="xtableWrap"></div>
+  </div>
+  <div class="upload-zone" onclick="document.getElementById('fileIn').click()" id="dropZone">
+    <div style="font-size:2rem;">📁</div>
+    <b>Actualizar datos</b>
+    <p>Clic o arrastrá un archivo CSV exportado de Jira</p>
+    <input type="file" id="fileIn" accept=".csv" style="display:none" onchange="loadFile(this.files[0])">
+  </div>
+</div>
+<div id="tab-horas" class="tab">
+  <div class="hrs-config">
+    <label>⏱ Horas acordadas:</label>
+    <input type="number" id="hsAcord" value="200" min="1" oninput="updateHrsBar()">
+    <span style="font-size:.78rem;color:#64748b;">Mínimo 10hs por Jira por defecto</span>
+  </div>
+  <div class="card" style="margin-bottom:16px;">
+    <h3>Progreso de Horas</h3>
+    <div class="hrs-bar"><div class="hrs-fill" id="hrsFill" style="width:0%"></div></div>
+    <div class="hrs-stats" id="hrsStats"></div>
+  </div>
+  <div style="margin-bottom:14px;">
+    <button class="btn btn-green" onclick="exportCSV()">⬇ Exportar CSV</button>
+    <button class="btn btn-blue" onclick="saveLocalState()">💾 Guardar estado</button>
+  </div>
+  <div class="kpi-row" id="kpiHrs"></div>
+</div>
+<div id="tab-planif" class="tab">
+  <div class="filter-row">
+    <input id="filtroTipo" placeholder="Filtrar tipo..." style="width:160px;" oninput="renderPlanif()">
+    <input id="filtroEstado" placeholder="Filtrar estado..." style="width:180px;" oninput="renderPlanif()">
+    <select id="filtroOk" onchange="renderPlanif()">
+      <option value="">Todos</option><option value="ok">Solo OK ✅</option><option value="nook">Sin OK</option>
+    </select>
+  </div>
+  <div id="planifWrap"></div>
+</div>
+<div id="tab-buscar" class="tab">
+  <div class="search-box">
+    <input id="searchQ" type="text" placeholder="Número de Jira (ej: NS-1826) o palabra clave..." onkeydown="if(event.key==='Enter')doSearch()">
+    <button onclick="doSearch()">Buscar</button>
+  </div>
+  <div id="searchResults"></div>
+</div>
+<div id="moverlay" onclick="if(event.target===this)closeMod()">
+  <div id="mbox">
+    <button class="close-btn" onclick="closeMod()">×</button>
+    <h2 id="mtitle"></h2>
+    <div class="msub" id="msub"></div>
+    <div id="mbody"></div>
+  </div>
+</div>
+<script>
+const TICKETS_BASE=[
+{tipo:"Soporte",clave:"NS-24",resumen:"INTERFACE SANCOR - NOVEDADES - GENERICA OPERACIONES",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Finalizada",actualizada:"7/8/2025 10:46",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-25",resumen:"BAJAR ESTADO DE SOPORTES GENERADOS",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Finalizada",actualizada:"5/8/2025 10:28",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-26",resumen:"INTERFACE ATM",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Finalizada",actualizada:"5/8/2025 10:46",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-27",resumen:"REVISAR INTERFACE DE ZURICH CAUCION",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Finalizada",actualizada:"8/9/2025 10:01",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-28",resumen:"Operaci\u00f3n N\u00b0 2725036",informador:"JORGE AZCURRA",prioridad:"Urgente",estado:"Rechazado",actualizada:"5/8/2025 16:06",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-29",resumen:"Interface Sancor",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"7/8/2025 09:23",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-30",resumen:"REHABILITAR OPERACION 2699457",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Finalizada",actualizada:"5/8/2025 16:06",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-31",resumen:"Inconsistencia en filtro de b\u00fasqueda Coberturas",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"25/8/2025 12:02",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-32",resumen:"ELIMINAR OPERACION Detalles de Operaci\u00f3n N\u00famero 2493743",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Finalizada",actualizada:"11/8/2025 12:28",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-33",resumen:"ELIMINAR Operaci\u00f3n N\u00famero 2624639",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Finalizada",actualizada:"11/8/2025 12:28",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-34",resumen:"Eliminar Operaci\u00f3n N\u00famero 2556422",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Finalizada",actualizada:"11/8/2025 12:28",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-35",resumen:"CONEXION SERVICIOS WEB - PROVINCIA SEGUROS",informador:"Soporte Norden",prioridad:"Media",estado:"Pendiente - Desarrollo",actualizada:"27/8/2026 16:24",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-36",resumen:"ELIMINAR O UNIFICAR ASEGURADORA NACION SEGUROS",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Finalizada",actualizada:"6/11/2025 16:23",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-37",resumen:"INTERFACE DE NOVEDADES SANCOR",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Finalizada",actualizada:"11/8/2025 15:10",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-39",resumen:"CREAR CUENTA DE MAIL PARA VOTA, ALESIA MARINA ( 63469 )",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Rechazado",actualizada:"8/8/2025 12:46",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-40",resumen:"LOZANO_ZURICH_LL ( 55586 )",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Rechazado",actualizada:"11/8/2025 15:21",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-41",resumen:"ERRORES INTERFACE - String or binary data would be truncated. The statement has been terminated.",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Finalizada",actualizada:"11/8/2025 15:23",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Nueva caracter\u00edstica",clave:"NS-44",resumen:"BUSQUEDA PAARCIAL de un Numero de Poliza/Operaciones",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Pendiente - Desarrollo",actualizada:"30/9/2025 15:10",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-47",resumen:"RE: Agro: Adelanto de cobertura: Estimaci\u00f3n",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Rechazado",actualizada:"12/8/2025 18:00",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-48",resumen:"Cotizador Productos Cotizar Allianz Integral Hogar",informador:"Soporte Norden",prioridad:"Media",estado:"An\u00e1lisis t\u00e9cnico",actualizada:"9/10/2025 13:14",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-49",resumen:"error en alta de productor",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"18/8/2025 12:01",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-51",resumen:"EDICION COBERTURAS - TABLAS DE CONVERSION",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Finalizada",actualizada:"25/8/2025 12:02",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-52",resumen:"Error al cargar un ente",informador:"Soporte Norden",prioridad:"Alta",estado:"Finalizada",actualizada:"30/9/2025 15:04",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-55",resumen:"Modificar y Cargar Cliente que tambien es Aseguradora",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Finalizada",actualizada:"18/8/2025 11:06",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-56",resumen:"Movimiento Reverso de renovaci\u00f3n Sancor",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"1/9/2025 12:57",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-57",resumen:"Modificar coberturas hogar premium",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"30/9/2025 14:54",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-58",resumen:"EN X 195-005-96226119-3",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"4/9/2025 12:30",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-64",resumen:"CARGA DE ITEMS EN RAMO SEGURO TECNICO",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Finalizada",actualizada:"20/8/2025 16:28",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-74",resumen:"REPORTE DE Informe operaciones procesadas",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Finalizada",actualizada:"13/7/2026 16:14",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-75",resumen:"Error en permisos grupo Productores y Productores- Venta",informador:"Soporte Norden",prioridad:"Media",estado:"Rechazado",actualizada:"20/8/2025 12:49",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-81",resumen:"Error al cotizar",informador:"Soporte Norden",prioridad:"Alta",estado:"Finalizada",actualizada:"27/8/2025 10:37",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-84",resumen:"CORREGIR EL ID DE VENDEDOR",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Finalizada",actualizada:"8/10/2025 13:11",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-85",resumen:"Tilde de liquidaci\u00f3n en Operaciones",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"30/9/2025 14:53",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-86",resumen:"Analizar Pendientes Generica",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"25/8/2025 17:50",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-91",resumen:"CodTarjetaCredito vacio en Sancor",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"20/10/2025 12:47",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-95",resumen:"Error en reporte deuda por cliente agro",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"6/11/2025 15:47",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-104",resumen:"MODIFICA SEGMENTACION",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Finalizada",actualizada:"4/9/2025 12:27",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-106",resumen:"Interface Sancor endosos",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"20/10/2025 12:47",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-107",resumen:"RESULTADO DE CAMBIO DE PAS - CON ERROR",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Finalizada",actualizada:"27/8/2025 10:13",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-108",resumen:"Agrega un motor de b\u00fasqueda por matricula de cias",informador:"Soporte Norden",prioridad:"Media",estado:"Rechazado",actualizada:"27/8/2025 10:39",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-110",resumen:"Movimiento de rehabilitaci\u00f3n de p\u00f3liza en Sancor",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"1/9/2025 12:08",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-115",resumen:"EN cambio de productor error",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"5/9/2025 10:11",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-118",resumen:"Meridional //M\u00ednimo Descuento/Recargo y M\u00e1ximo Descuento/Recargo",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"8/9/2025 13:06",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-124",resumen:"COMPARATIVO - COTIZADOR AUTOS",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Finalizada",actualizada:"1/9/2025 12:42",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-127",resumen:"Reporte de Soporte solicitados por Jira",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"12/9/2025 09:58",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-134",resumen:"PROBLEMA CON INICIO VIGENCIA DE POLIZA",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Finalizada",actualizada:"8/9/2025 12:38",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-135",resumen:"Interface Enviar Orden Allianz (Agro)",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"8/9/2025 12:39",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-136",resumen:"Interface Sancor Novedades",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"8/9/2025 12:41",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-137",resumen:"Timeout en b\u00fasqueda Solicitudes de Emisi\u00f3n - Automotor x presupuesto",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"10/12/2025 11:15",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-150",resumen:"Poliza 670898 coberturas en los items",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"4/9/2025 15:48",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-154",resumen:"Novedades Galicia",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"8/10/2025 12:19",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-158",resumen:"Federaci\u00f3n Patronal cotizador",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"6/11/2025 15:49",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-165",resumen:"Sancor cobertura Max Incendio",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"29/9/2025 12:53",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-166",resumen:"INTERFACE / CONTROL CTA CTE / CTA CTE PENDIENTE",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Rechazado",actualizada:"20/10/2025 12:51",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Solicitud enviada por correo electr\u00f3nico",clave:"NS-178",resumen:"RV: CARGA EXCEL DEUDORES | Bitrix",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Finalizada",actualizada:"10/9/2025 11:48",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-185",resumen:"Adjunto de fotos al momento de emitir",informador:"Soporte Norden",prioridad:"Media",estado:"Pendiente - Desarrollo",actualizada:"7/11/2025 11:54",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Nueva caracter\u00edstica",clave:"NS-186",resumen:"INICIO - CONFIGURADOR DE ELEMENTOS",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Pendiente - Desarrollo",actualizada:"7/9/2026 17:53",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-189",resumen:"Interface Granizo (Agro) Sancor",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"20/10/2025 12:40",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-191",resumen:"Pendiente de carga, del Control de Cta Cte.",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Pendiente - Desarrollo",actualizada:"30/4/2026 16:28",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-192",resumen:"CAMBIO DE CLIENTE OP 2804718",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Finalizada",actualizada:"19/9/2025 15:42",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-196",resumen:"CONTROL REPORTE POLIZAS VIGENTES",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Finalizada",actualizada:"18/9/2025 16:24",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-197",resumen:"Interface producto y seccion Bitrix 6356",informador:"Soporte Norden",prioridad:"Media",estado:"Pendiente - Desarrollo",actualizada:"14/11/2025 11:36",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-203",resumen:"Hist\u00f3rico agosto 2024 a la fecha para San Crist\u00f3bal",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"20/10/2025 12:40",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-204",resumen:"Permiso habilitar env\u00eda BI Meridional",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"6/11/2025 15:49",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-207",resumen:"Interface cauci\u00f3n Z\u00farich",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"16/9/2025 12:12",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-209",resumen:"EMISION MERIDIONAL AUTOMOTORES y MOTOS",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Pendiente - Desarrollo",actualizada:"20/10/2025 11:38",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-215",resumen:"Error en emisi\u00f3n Mercantil",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"18/9/2025 16:17",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-216",resumen:"Error al descargar DS p\u00f3liza 96151796",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"6/11/2025 15:49",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-218",resumen:"Error 500 al cotizar Sancor",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"30/9/2025 14:44",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-219",resumen:"Error al buscar por patente",informador:"Soporte Norden",prioridad:"Urgente",estado:"Finalizada",actualizada:"22/9/2025 11:04",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-221",resumen:"Registro en la interface Esquema comisionario",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"18/9/2025 15:50",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-234",resumen:"Veh\u00edculos asegurados // P\u00f3lizas vigentes y anuladas",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"6/11/2025 15:50",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-235",resumen:"Error al consultar ID Productor",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"24/9/2025 15:35",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-245",resumen:"Botonera para anular Op Asegurado CENTRO CRISTIANO INTERNACIONAL",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"30/9/2025 14:53",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-256",resumen:"Error en alta de operaci\u00f3n presupuesto 162986",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"25/9/2025 16:21",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-264",resumen:"Error al cotizar con diversos pas",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"29/9/2025 11:10",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-265",resumen:"Detalles de Operaci\u00f3n N\u00famero 2816726",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Finalizada",actualizada:"29/9/2025 11:09",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-267",resumen:"Reporte an\u00e1lisis de operaciones",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"12/11/2025 15:53",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-269",resumen:"Conectar cotizador Combinado familiar Zurich",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"14/5/2026 14:06",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-270",resumen:"Enviar BI Meridional",informador:"Soporte Norden",prioridad:"Media",estado:"Pendiente - Desarrollo",actualizada:"9/10/2025 12:45",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-272",resumen:"Error al realizar diversas acciones en el Norden BI",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"7/1/2026 11:19",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-279",resumen:"Borrar pendiente presupuestos ART",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"29/9/2025 17:52",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-280",resumen:"PRIORIDADES",informador:"JORGE AZCURRA",prioridad:"Alta",estado:"Finalizada",actualizada:"24/2/2026 15:29",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-281",resumen:"Cotizador Meridional",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"6/11/2025 15:50",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-283",resumen:"ELIMINAR CLIENTE BODEGAS SALENTEIN EN DETALLE DE CARGA DE OPERACIONES",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Finalizada",actualizada:"30/9/2025 15:13",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-286",resumen:"Error en b\u00fasqueda control gesti\u00f3n",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"10/12/2025 11:15",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-289",resumen:"Gesti\u00f3n de Presupuestos ART",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"7/1/2026 11:19",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-290",resumen:"Informaci\u00f3n para el Cliente ART",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"7/1/2026 11:19",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-291",resumen:"Usabilidad y B\u00fasqueda ART",informador:"Soporte Norden",prioridad:"Media",estado:"Analisis funcional",actualizada:"24/9/2026 12:42",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-292",resumen:"Parametrizaciones ART",informador:"Soporte Norden",prioridad:"Media",estado:"Analisis funcional",actualizada:"24/9/2026 12:42",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-293",resumen:"Funcionalidades de Identificaci\u00f3n y Control ART",informador:"Soporte Norden",prioridad:"Media",estado:"Analisis funcional",actualizada:"24/9/2026 12:41",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-294",resumen:"Integraciones y Comunicaciones ART",informador:"Soporte Norden",prioridad:"Media",estado:"Analisis funcional",actualizada:"24/9/2026 12:41",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-295",resumen:"Inconsistencia en el cotizador",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"2/10/2025 15:53",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-303",resumen:"Emisi\u00f3n Sancor Quick diferencia en precios Presupuesto 163180 VERA RODRIGUEZ, HERNANDO JHONEL",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"28/10/2025 15:12",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-329",resumen:"Error al borrar Grupo de Vendedores",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"10/12/2025 11:16",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-338",resumen:"Bajas de usuario en el Norden BI",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"15/10/2025 15:20",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-344",resumen:"Novedades Zurich",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"15/10/2025 15:15",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-345",resumen:"Adelanto de coberturas (Agro)",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"6/11/2025 15:50",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-349",resumen:"Mejora alta de Asegurados",informador:"Soporte Norden",prioridad:"Media",estado:"Analisis funcional",actualizada:"9/4/2026 10:53",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-353",resumen:"Opci\u00f3n de detener las interfaces",informador:"Soporte Norden",prioridad:"Media",estado:"Rechazado",actualizada:"13/11/2025 17:49",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-354",resumen:"Anulaci\u00f3n de OP",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"24/11/2025 15:44",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-362",resumen:"Cambio de asegurado // Jira viene del NS- 84",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"20/10/2025 12:38",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-367",resumen:"Error timeout al bajar excel de liquidaciones",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"24/2/2026 15:29",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-372",resumen:"Exclusi\u00f3n de secciones interface",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"20/10/2025 12:48",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-381",resumen:"Formulario denuncia da\u00f1o",informador:"Soporte Norden",prioridad:"Media",estado:"Analisis funcional",actualizada:"28/4/2026 15:13",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-382",resumen:"Error en agregar adicionales (Agro)",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"6/11/2025 15:50",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-383",resumen:"Confirmaci\u00f3n gruesa 25-26 (MAIZ) Juamarita (Op RdlCarreras)",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"6/11/2025 15:50",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-387",resumen:"Anular factura de las Op de la p\u00f3liza 947391",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"21/10/2025 11:29",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-406",resumen:"Interface San Cristobal motivo de endoso",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"27/10/2025 12:04",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-413",resumen:"Cotizador Galicia asistencia mecanica",informador:"Soporte Norden",prioridad:"Media",estado:"Pendiente - Desarrollo",actualizada:"27/10/2025 09:57",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-420",resumen:"Agro Norden BI// RECIBO DE PAGO GOUGY FELIX",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"24/11/2025 15:44",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-421",resumen:"Linea comercial Norden BI// Cotizador Motos",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"27/10/2025 09:12",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-422",resumen:"Operaciones Norden BI// Crear ABM para ingresar el tipo de uso de un Auto",informador:"Soporte Norden",prioridad:"Media",estado:"Pendiente - Desarrollo",actualizada:"13/11/2025 17:50",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-423",resumen:"Linea comercial Norden BI// Cotizador Motos Galicia",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"8/10/2026 15:07",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-425",resumen:"Operaciones Norden BI// Solicitud de reporte informe de polizas vigentes",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"13/7/2026 16:14",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-431",resumen:"Operaciones Norden BI// Anulaci\u00f3n facturaci\u00f3n OP poliza 515890336",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"31/10/2025 14:33",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-434",resumen:"ART Norden BI// Aseguradora Parana",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"31/10/2025 14:33",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-437",resumen:"Operaciones Norden BI// Anulaci\u00f3n de operacion",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"28/10/2025 14:25",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-439",resumen:"Operaciones Norden BI// Error al buscar por patente",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"31/10/2025 14:35",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-441",resumen:"ART Norden BI// Error en b\u00fasqueda de presupuesto",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"10/12/2025 11:15",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-448",resumen:"Asignaci\u00f3n Autom\u00e1tica de Productor al Asegurado (Cliente)",informador:"JORGE AZCURRA",prioridad:"Alta",estado:"Pendiente - Desarrollo",actualizada:"10/11/2025 11:28",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-449",resumen:"Operaciones Norden BIUY// Modificaci\u00f3n suma asegurada del bien",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"31/10/2025 14:37",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-450",resumen:"Agro Norden BI// Adelanto de coberturas base clientes",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"12/11/2025 12:23",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-451",resumen:"En EXCEL/ REPORTE- Informe operaciones procesadas",informador:"JORGE AZCURRA",prioridad:"Urgente",estado:"Finalizada",actualizada:"31/10/2025 16:05",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-452",resumen:"Linea comercial Norden BI// Error al registrar venta en ENVIAR BI",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"10/12/2025 11:16",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-454",resumen:"Operaciones Norden BI// Configuraci\u00f3n de mail",informador:"Soporte Norden",prioridad:"Media",estado:"Pendiente - Desarrollo",actualizada:"13/8/2026 11:54",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Solicitud enviada por correo electr\u00f3nico",clave:"NS-463",resumen:"RV: Novedades NroPolizaUnificada - Ramo Caucion",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"3/11/2025 14:39",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Solicitud enviada por correo electr\u00f3nico",clave:"NS-464",resumen:"Prueba",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"3/11/2025 14:38",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Solicitud enviada por correo electr\u00f3nico",clave:"NS-465",resumen:"Prueba",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"3/11/2025 14:38",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-466",resumen:"Operaciones Norden BI// CONEXION WEB SERVICIES - PARA EMISIONES - MERIDIONAL AP",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"7/4/2026 16:54",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-468",resumen:"Operaciones Norden BI// CONEXION WEB SERVICIES - PARA EMISIONES - BERKLEY AP",informador:"Soporte Norden",prioridad:"Media",estado:"Pendiente - Desarrollo",actualizada:"30/12/2025 12:11",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-469",resumen:"Operaciones Norden BI// Error al descargar poliza 30914409",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"3/11/2025 14:57",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-478",resumen:"BAJAR POLIZA - UNIFICADO - ERROR",informador:"JORGE AZCURRA",prioridad:"Urgente",estado:"Finalizada",actualizada:"5/11/2025 10:41",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-479",resumen:"Operaciones Norden BI// Error al descargar poliza 30914409",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"5/11/2025 14:29",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-482",resumen:"Operaciones Norden BI// Interfaces novedades",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"6/11/2025 09:49",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-483",resumen:"Agro Norden BI// Interface Enviar Orden Mercantil (Agro)",informador:"Soporte Norden",prioridad:"Alta",estado:"Finalizada",actualizada:"6/11/2025 09:39",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-485",resumen:"ART Norden BI// Cotizador ART carga de Asegurado",informador:"Soporte Norden",prioridad:"Media",estado:"Pendiente - Desarrollo",actualizada:"5/11/2025 14:37",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-488",resumen:"ELIMINAR OPERACION PENDIENTE 2861835",informador:"JORGE AZCURRA",prioridad:"Urgente",estado:"Finalizada",actualizada:"5/11/2025 14:42",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-490",resumen:"Operaciones Norden BI// Solicitud de emision",informador:"Soporte Norden",prioridad:"Alta",estado:"Pendiente - Desarrollo",actualizada:"10/11/2025 11:42",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-493",resumen:"COASEGURO",informador:"JORGE AZCURRA",prioridad:"Alta",estado:"Analisis funcional",actualizada:"28/4/2026 15:40",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-494",resumen:"DEFAULT DE TIPO DE RENOVACION - TABLAS DE SEGUROS",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Finalizada",actualizada:"10/12/2025 11:16",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-499",resumen:"Linea comercial Norden BI// Emisi\u00f3n Galicia inspecci\u00f3n",informador:"Soporte Norden",prioridad:"Alta",estado:"Finalizada",actualizada:"10/11/2025 12:00",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-500",resumen:"Cobranzas Norden BI// Error al facturar un op",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"12/11/2025 15:59",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-501",resumen:"PRODUCTOR VENDEDOR DUPLICADO",informador:"JORGE AZCURRA",prioridad:"Urgente",estado:"Finalizada",actualizada:"12/11/2025 15:53",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-508",resumen:"Linea empresas Norden BI// Error en venta Sancor presupuesto 164732",informador:"Soporte Norden",prioridad:"Alta",estado:"Finalizada",actualizada:"12/11/2025 15:44",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-511",resumen:"Operaciones Norden BI// Reporte de JIRA",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"10/11/2025 11:58",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-514",resumen:"Operaciones Norden BI// consulta de p\u00f3lizas",informador:"Soporte Norden",prioridad:"Media",estado:"Pendiente - Desarrollo",actualizada:"12/11/2025 15:45",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-515",resumen:"ERROR EN BUSQUEDA DE PAS/VENDEDOR",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Finalizada",actualizada:"10/11/2025 15:10",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-516",resumen:"Linea comercial Quick BI// presupuesto Automotor",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"25/11/2025 15:48",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-525",resumen:"Operaciones Norden BI// CodSolicutud Sancor vacio",informador:"Soporte Norden",prioridad:"Alta",estado:"Finalizada",actualizada:"12/11/2025 16:53",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-536",resumen:"Operaciones Norden BI// Interface Siniestros",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"13/11/2025 17:35",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Solicitud enviada por correo electr\u00f3nico",clave:"NS-537",resumen:"RV: ERROR EN EL BI",informador:"Soporte Norden",prioridad:"Media",estado:"Pendiente - Desarrollo",actualizada:"14/11/2025 11:08",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-538",resumen:"Agro Norden BI// carga de archivos",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"13/7/2026 16:14",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-539",resumen:"Agro Norden BI// Adelanto de coberturas copiar",informador:"Soporte Norden",prioridad:"Media",estado:"Rechazado",actualizada:"14/11/2025 09:38",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-540",resumen:"Operaciones Norden BI// Anulaci\u00f3n de factura op 2746841",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"17/11/2025 20:25",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-541",resumen:"Agro Norden BI// Error al editar Productor",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"14/11/2025 12:33",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-542",resumen:"Agro Norden BI// Anulaci\u00f3n de Operaciones",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"14/11/2025 12:36",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-543",resumen:"Dashboard patrimoniales - Muestra un comportamiento diferente al seleccionar un unico Ente",informador:"JORGE AZCURRA",prioridad:"Alta",estado:"Finalizada",actualizada:"17/11/2025 12:06",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-545",resumen:"Operaciones Norden BI// Error al cotizar Allianz",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"24/11/2025 15:43",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-546",resumen:"REPORTE DE POLIZAS VIGENTES",informador:"JORGE AZCURRA",prioridad:"Alta",estado:"Pendiente - Desarrollo",actualizada:"17/11/2025 09:40",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-547",resumen:"Eliminar Vendedor por Duplicidad de Prima",informador:"JORGE AZCURRA",prioridad:"Alta",estado:"Rechazado",actualizada:"24/11/2025 15:43",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-548",resumen:"Linea comercial Norden BI// Cotizador Galicia campa\u00f1as",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"17/11/2025 17:52",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-551",resumen:"Operaciones Norden BI// Anulaci\u00f3n de factura op 2746841",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"24/11/2025 15:43",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-552",resumen:"Agro Norden BI// Anulaci\u00f3n de operaci\u00f3n 2807440",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"24/11/2025 15:43",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-555",resumen:"Linea comercial Norden BI// Cotizador COMBINADO FAMILIAR",informador:"Soporte Norden",prioridad:"Alta",estado:"Finalizada",actualizada:"4/3/2026 15:00",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-566",resumen:"Operaciones Norden BI// Bug al cargar \u00edtem a operaci\u00f3n",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"10/12/2025 11:16",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-567",resumen:"Agro Norden BI// Descarga de formato Word denuncia de siniestro",informador:"Soporte Norden",prioridad:"Media",estado:"Pendiente - Desarrollo",actualizada:"24/11/2025 15:27",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Solicitud enviada por correo electr\u00f3nico",clave:"NS-575",resumen:"RV: Altas Pza  10765354 - MUNICIPALIDAD DE LA COSTA",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Rechazado",actualizada:"25/11/2025 14:27",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-580",resumen:"Operaciones Norden BI// Interface Novedades Zurich",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"3/12/2025 11:30",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-589",resumen:"Operaciones Norden BI// Zurich envio por interface poliza 96149365",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"19/12/2025 15:20",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-595",resumen:"Implementaci\u00f3n de Prorrata Diaria en el C\u00e1lculo de Prima (Ajuste por Vigencia de la Operaci\u00f3n / Per\u00edodo de Facturaci\u00f3n)",informador:"JORGE AZCURRA",prioridad:"Alta",estado:"An\u00e1lisis t\u00e9cnico",actualizada:"4/8/2026 13:48",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-598",resumen:"Operaciones Norden BI// Cotizador motos Sancor",informador:"Soporte Norden",prioridad:"Alta",estado:"Finalizada",actualizada:"19/2/2026 09:54",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-599",resumen:"Operaciones Norden BI// Novedades Experta",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"19/2/2026 09:54",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-601",resumen:"Operaciones Norden BI// Solicitud de asocio Novedades Sancor",informador:"Soporte Norden",prioridad:"Media",estado:"Rechazado",actualizada:"3/12/2025 09:42",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Solicitud enviada por correo electr\u00f3nico",clave:"NS-610",resumen:"RV: DEMORAS PARA COTIZAR EN EL BI",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"16/12/2025 10:16",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-619",resumen:"Operaciones Norden BI// Interface Novedades Zurich",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"15/12/2025 11:48",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Solicitud enviada por correo electr\u00f3nico",clave:"NS-620",resumen:"RV: Facturaci\u00f3n",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"9/12/2025 13:58",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-624",resumen:"Operaciones Norden BI// Interface SG",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"16/12/2025 10:15",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-625",resumen:"Operaciones Norden BI// poliza 13515690",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"11/12/2025 12:12",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-626",resumen:"Operaciones Norden BI// Cambio de cliente en las polizas  2949485 y 2934983",informador:"Soporte Norden",prioridad:"Media",estado:"Pendiente - Desarrollo",actualizada:"11/12/2025 12:03",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-628",resumen:"Operaciones Norden BI// INTERFACE ATM",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"24/2/2026 15:28",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-639",resumen:"Agro Norden BI// Error en alta adelanto de cobertura",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"16/12/2025 10:55",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-641",resumen:"Operaciones Norden BI// Error al emitir presupuesto 166011",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"16/12/2025 15:54",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-648",resumen:"Linea comercial Norden BI// Cotizador Norden BI",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"17/12/2025 16:44",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Nueva caracter\u00edstica",clave:"NS-650",resumen:"INTERF. C.TA C.TE AYUDA DE GASTOS - ZURICH - Varios ajustes a REVISAR de ser viable,",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Finalizada",actualizada:"12/1/2026 14:38",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-651",resumen:"Operaciones Norden BI// CONEXION WEB SERVICIES - PARA EMISIONES - COTIZACION- INTERFACE// COOPERACION SEGUROS",informador:"Soporte Norden",prioridad:"Media",estado:"Rechazado",actualizada:"27/4/2026 12:55",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-658",resumen:"Operaciones Norden BI// Norden BI caido",informador:"Soporte Norden",prioridad:"Alta",estado:"Finalizada",actualizada:"19/12/2025 15:20",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-671",resumen:"Agro Norden BI// INTERFACE MA",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"2/1/2026 17:22",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-673",resumen:"Agros Norden BI// Error al descargar reportes",informador:"Soporte Norden",prioridad:"Urgente",estado:"Finalizada",actualizada:"30/12/2025 11:56",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-679",resumen:"Operaciones Norden BI// Multi cotizador",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"30/12/2025 15:57",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-681",resumen:"PASAR A CUIT IDCLIENTE 8323",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Finalizada",actualizada:"7/1/2026 17:11",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-684",resumen:"Operaciones Norden BI// Novedades interface",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"7/1/2026 17:11",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-686",resumen:"Operaciones Norden BI// Cambio de cliente en las polizas  2949485 y 2934983",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"19/2/2026 10:39",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-693",resumen:"Operaciones Norden BI// Venta desde BI no registro la Operacion",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"7/1/2026 17:35",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-695",resumen:"Operaciones Norden BI// Generica de Operaciones y Generica general",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"16/1/2026 10:29",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-708",resumen:"Operaciones Norden BI// Error en emisioin de presupuesto 166674",informador:"Soporte Norden",prioridad:"Alta",estado:"Finalizada",actualizada:"16/1/2026 10:29",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Solicitud enviada por correo electr\u00f3nico",clave:"NS-710",resumen:"NOVEDADES BERKLEY",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Finalizada",actualizada:"30/1/2026 17:04",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-716",resumen:"Operaciones Norden BI// Mejoras Cotizador",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"8/1/2026 14:56",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-720",resumen:"Operaciones Norden BI// Error en emisioin de presupuesto 166698",informador:"Soporte Norden",prioridad:"Alta",estado:"Finalizada",actualizada:"8/1/2026 18:35",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-733",resumen:"IINTERFACE DE ZURICH - Operaciones NO Ingresadas",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Finalizada",actualizada:"16/1/2026 10:26",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-737",resumen:"Operaciones Norden BI// Error en la selecci\u00f3n grupo vendedor",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"4/2/2026 11:51",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-744",resumen:"Cobranza Norden BI// Problema con Liquidaciones en Norden Bi",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"14/1/2026 11:28",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-745",resumen:"Agro Norden BI// INTERFACE",informador:"Soporte Norden",prioridad:"Media",estado:"Analisis funcional",actualizada:"21/8/2026 10:34",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-746",resumen:"Agro Norden BI// Adelanto de coberturas",informador:"Soporte Norden",prioridad:"Media",estado:"Pendiente - Desarrollo",actualizada:"21/1/2026 11:25",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-748",resumen:"Agro Norden BI// CONTACTOS DE PRODUCTORES",informador:"Soporte Norden",prioridad:"Media",estado:"An\u00e1lisis t\u00e9cnico",actualizada:"7/9/2026 17:52",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-751",resumen:"Operaciones Norden BI// Anulaci\u00f3n de operaci\u00f3n 2920136",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"16/1/2026 10:26",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-760",resumen:"Operaciones Norden BI// Error al cargar op con ID de Aseguradora",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"15/1/2026 12:51",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-761",resumen:"GRUPO EMPRESA - Agregar a cartera de Clientes de CLIPPER",informador:"JORGE AZCURRA",prioridad:"Alta",estado:"Finalizada",actualizada:"15/1/2026 17:38",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-762",resumen:"REPORTE DE OPERACIONES ANULADAS - EN PERIODOS 2020 a 2025",informador:"JORGE AZCURRA",prioridad:"Alta",estado:"Finalizada",actualizada:"12/6/2026 12:46",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-766",resumen:"Operaciones Norden BI// Error en cotizaci\u00f3n Galicia",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"27/1/2026 16:22",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-770",resumen:"POLIZA de BERKELY con riesgo delante - No mpermite modificar n\u00famero.",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Finalizada",actualizada:"19/1/2026 10:17",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Solicitud enviada por correo electr\u00f3nico",clave:"NS-771",resumen:"RV: No funciona INTERFACE Allianz",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Finalizada",actualizada:"20/1/2026 09:37",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-774",resumen:"Error en ELIMINAR una operaci\u00f3n",informador:"JORGE AZCURRA",prioridad:"Urgente",estado:"Finalizada",actualizada:"20/1/2026 15:16",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-775",resumen:"INTERFACE ZURICCH - CAUCION - RENOVACIONES",informador:"JORGE AZCURRA",prioridad:"Alta",estado:"Finalizada",actualizada:"24/2/2026 15:28",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-780",resumen:"Carga de Aseguradora nueva y CLIENTE",informador:"JORGE AZCURRA",prioridad:"Urgente",estado:"Finalizada",actualizada:"21/1/2026 15:35",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Solicitud enviada por correo electr\u00f3nico",clave:"NS-783",resumen:"RV: ERROR - ADELANTO DE COBERTURA",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Finalizada",actualizada:"12/6/2026 12:42",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-785",resumen:"ITEM SIIN INGRESAR A LA OPERACION X INTERFACE",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Pendiente - Soporte",actualizada:"6/10/2026 19:11",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-786",resumen:"INTERFACE DE ALLIANZ. - LEADS DE DDMT Y JIL",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Finalizada",actualizada:"12/6/2026 12:46",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-790",resumen:"Pedido de ALTAS de codigos en SANCOR, para Intergface de Novedades",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Finalizada",actualizada:"26/1/2026 13:00",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-793",resumen:"GENERICA COBRANZAS",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Finalizada",actualizada:"30/1/2026 17:02",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-800",resumen:"Operaciones Norden BI// Error al descargar documentaci\u00f3n",informador:"Soporte Norden",prioridad:"Alta",estado:"Finalizada",actualizada:"5/2/2026 11:49",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-815",resumen:"Linea personas// Error en b\u00fasqueda de prepuesto",informador:"Soporte Norden",prioridad:"Media",estado:"Pendiente - Desarrollo",actualizada:"29/1/2026 17:00",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-816",resumen:"Operaciones Norden BI// Error en el cotizador Vendedor LAMOLINA, JUAN I",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"12/2/2026 16:18",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-821",resumen:"Linea empresas Norden BI// Error al modificar un items",informador:"Soporte Norden",prioridad:"Media",estado:"Rechazado",actualizada:"2/2/2026 12:19",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-826",resumen:"Linea empresas Norden BI// Error al enviar BI",informador:"Soporte Norden",prioridad:"Media",estado:"Pendiente - Desarrollo",actualizada:"2/2/2026 14:47",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-829",resumen:"Operaciones Norden BI// Actualizaci\u00f3n nueva interface",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"3/2/2026 15:29",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-836",resumen:"Operaciones Norden BI// Actualizacion interface",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"24/2/2026 15:27",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-840",resumen:"Linea comercial Norden BI// Error al cotizar moto",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"24/2/2026 15:27",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-845",resumen:"Siniestro Norden BI// Bug en la carga de datos de tercero",informador:"Soporte Norden",prioridad:"Urgente",estado:"Finalizada",actualizada:"7/4/2026 16:51",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-846",resumen:"Operaciones Norden BI// Cambio de secci\u00f3n por base",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"5/2/2026 11:09",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-852",resumen:"Operaciones Norden BI// Interface baja de registros",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"6/2/2026 10:49",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-861",resumen:"Operaciones Norden BI// Interface correcciones",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"24/2/2026 15:26",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-862",resumen:"Agro Norden BI// Reprocesar las bajas de Items",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"26/8/2026 10:20",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-866",resumen:"Cobranzas Norden BI// Actualiza Gen\u00e9rica Cuenta Corriente",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"24/2/2026 15:26",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-875",resumen:"Operaciones Norden BI// Alta de pas CORTEZ JORGE DNI 17557794",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"23/2/2026 11:04",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-895",resumen:"Operaciones Norden BI// Interface ATM",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"19/2/2026 17:50",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-896",resumen:"INTERFACE DE PLAN DE PAGO",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Finalizada",actualizada:"20/2/2026 19:37",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-897",resumen:"ERROR EN INTERFACE GENRICA DE OPERACIONES - ERROR ALTA NUEVA",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Finalizada",actualizada:"24/2/2026 15:26",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-898",resumen:"Operaciones Norden BI// Rehabilitaci\u00f3n de operaciones",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"24/2/2026 15:26",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-899",resumen:"Operaciones Norden BI// Error la interface Experta",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"24/2/2026 15:26",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-901",resumen:"Operaciones Norden BI// Implementaci\u00f3n de descarga de documentaci\u00f3n Allianz",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"4/3/2026 15:00",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Solicitud enviada por correo electr\u00f3nico",clave:"NS-904",resumen:"PLAN DE PAGO EN INTERFACES VARIAS",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Finalizada",actualizada:"27/2/2026 15:19",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-910",resumen:"EMISION - INSPECCIONES - MERCANTIL ANDINA",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Pendiente - Desarrollo",actualizada:"23/2/2026 16:27",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-912",resumen:"INTERFACE SAN CRISTOBAL ITEMS VEHICULOS y COBERTURAS",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Finalizada",actualizada:"24/2/2026 15:25",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-913",resumen:"Operaciones Norden BI// Poliza 23650",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"27/2/2026 17:57",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-914",resumen:"Operaciones Norden BI// Error interface anulacion",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"12/6/2026 12:42",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Solicitud enviada por correo electr\u00f3nico",clave:"NS-915",resumen:"RE: Nuevo recurso Agus",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Finalizada",actualizada:"24/2/2026 11:12",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-917",resumen:"INTERFACE DE ATM y REBOTES",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Finalizada",actualizada:"6/4/2026 10:37",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-924",resumen:"INTERFACE SANCOR - PISA CLIENTE SI ES COASEGURADO",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Rechazado",actualizada:"10/3/2026 12:30",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-927",resumen:"Operaciones Norden BI// novedades Sancor/ Zurich",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"27/2/2026 17:14",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-930",resumen:"EMISION DUPLICADAS ZURICH",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Pendiente - Desarrollo",actualizada:"27/2/2026 17:27",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-932",resumen:"REFACTURACIONES - REPORTE - MODIFICACIONES",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Analisis funcional",actualizada:"24/9/2026 12:36",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-935",resumen:"Operaciones Norden BI// registro interface poliza 24141",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"12/6/2026 12:42",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-937",resumen:"Operaciones Norden BI// cambio de secci\u00f3n por base",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"27/2/2026 17:57",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-939",resumen:"Operaciones Norden BI// Anulaci\u00f3n de operaci\u00f3n con liquidaci\u00f3n",informador:"Soporte Norden",prioridad:"Media",estado:"Analisis funcional",actualizada:"25/9/2026 12:06",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-940",resumen:"Operaciones Norden BI// Cambio de cliente en la operacion 2986581",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"26/8/2026 10:29",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-943",resumen:"Operaciones Norden BI// Archivo correcciones interface de operaciones",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"22/4/2026 16:37",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-945",resumen:"Interface ATM",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"25/3/2026 11:39",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-946",resumen:"Operaciones Norden BI// cambio de seccion de poliza",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"27/3/2026 17:19",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-948",resumen:"REPORTE DE OPERACIONES PROCESADAS - ERROR",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Finalizada",actualizada:"6/3/2026 17:27",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-957",resumen:"Operaciones Norden BI// novedades Mercantil/ Zurich",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"15/4/2026 12:12",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-960",resumen:"Operaciones Norden BI// Error al descargar factura desde una operaci\u00f3n Z\u00farich",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"10/3/2026 11:45",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-962",resumen:"Operaciones Norden BI// Error interface asegurados Zurich",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"12/6/2026 12:47",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-964",resumen:"Operaciones Norden BI// Error en cotizador para la Cia Allianz",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"15/4/2026 11:57",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-965",resumen:"Comisiones - Mercantil - Transformar Archivos",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Finalizada",actualizada:"26/8/2026 10:26",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-967",resumen:"Actualiza Generica Cuenta Corriente - Excel",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Finalizada",actualizada:"12/6/2026 12:47",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-970",resumen:"Operaciones Norden BI// Norden BI con lag en diversas acciones",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"15/4/2026 11:55",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-971",resumen:"Operaciones Norden BI// Error critico en comisiones subidas por interface Zurich",informador:"Soporte Norden",prioridad:"Urgente",estado:"Finalizada",actualizada:"12/6/2026 12:42",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-993",resumen:"Operaciones Norden BI// Error en la consulta de un ID Ente Productor",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"26/3/2026 17:34",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-996",resumen:"Reporte de Soporte solicitados por Jira",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"25/3/2026 15:20",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1002",resumen:"Query Asegurados duplicados",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"30/3/2026 12:07",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1003",resumen:"Operaciones Norden BI// Interface Berkley secciones 037 y 022",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"6/4/2026 11:40",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1008",resumen:"Operaciones Norden BI// Error en beneficios de cara al presupuesto",informador:"Soporte Norden",prioridad:"Media",estado:"Pendiente - Desarrollo",actualizada:"30/3/2026 12:10",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1009",resumen:"INTERFACE SANCOR - REVISAR EMISION POLIZAS CERRADAS",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Finalizada",actualizada:"15/4/2026 11:52",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1020",resumen:"Operaciones Norden BI// Error al cargar Id Productor",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"12/6/2026 12:42",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1022",resumen:"Operaciones Norden BI// Cotizador Resultado Galicia",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"14/5/2026 14:06",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1023",resumen:"Linea personas// Error en venta de presupuesto 169718",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"12/6/2026 12:42",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1024",resumen:"Operaciones Norden BI// Interface Novedades Mercantil",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"12/6/2026 12:42",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Nueva caracter\u00edstica",clave:"NS-1026",resumen:"Automatizaci\u00f3n y Optimizaci\u00f3n de Carga (Infoauto / Infomoto)",informador:"JORGE AZCURRA",prioridad:"Alta",estado:"Analisis funcional",actualizada:"1/6/2026 12:14",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Nueva caracter\u00edstica",clave:"NS-1027",resumen:"Optimizaci\u00f3n de la Estructura de Ramos y Productos para Trazabilidad de Cartera",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Analisis funcional",actualizada:"28/4/2026 15:35",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Nueva caracter\u00edstica",clave:"NS-1028",resumen:"Identificaci\u00f3n de Flotas como Producto dentro de la Secci\u00f3n Automotores",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Finalizada",actualizada:"25/8/2026 17:46",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Nueva caracter\u00edstica",clave:"NS-1029",resumen:"Control de Integridad para Clientes Cr\u00edticos (Exclusiones)",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Finalizada",actualizada:"12/6/2026 12:45",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1033",resumen:"INCLUSION EN INTERFACE DE NOVEDADES DE SACOR",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Finalizada",actualizada:"12/6/2026 12:41",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1034",resumen:"Operaciones Norden BI// Interface Gen\u00e9rica de Operaciones",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"15/4/2026 11:15",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1035",resumen:"Operaciones Norden BI// Error en renovaci\u00f3n realizada por interface poliza 96019381",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"10/4/2026 10:59",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1036",resumen:"Linea personas// Error en descarga de factura poliza 90006381496",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"8/4/2026 15:32",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1037",resumen:"Operaciones Norden BI// Delate al renovar poliza",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"12/6/2026 12:47",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1042",resumen:"Linea comercial Norden BI// Cotizador campa\u00f1as Galicia",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"10/4/2026 10:24",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1044",resumen:"INTERFACES DE COMISIONES - GRANIZO",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Finalizada",actualizada:"12/6/2026 12:41",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1047",resumen:"Operaciones Norden BI// Cambio de secci\u00f3n por base",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"12/6/2026 12:41",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1049",resumen:"Linea comercial Norden BI// Cotizador AP Meridional diferencia",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"14/5/2026 14:06",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1050",resumen:"Operaciones Norden BI// Interface Mapeo de cliente incorrecto poliza 6046480// 6395413",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"12/6/2026 12:41",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1057",resumen:"Linea comercial Norden BI// Error control gestion presupuesto 170305",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"15/4/2026 11:13",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1058",resumen:"REPORTE DE POLIZAS VIGENTES - ERROR - No se puede bajar",informador:"JORGE AZCURRA",prioridad:"Alta",estado:"Finalizada",actualizada:"15/5/2026 11:11",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1060",resumen:"Linea comercial Norden BI// Error al descargar poliza y certificado en Emision Presupuesto 170309",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"10/4/2026 12:27",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1062",resumen:"Operaciones Norden BI// Novedades Sancor seccion Incendio",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"12/6/2026 12:40",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1065",resumen:"Cobranzas Norden BI// Interfaz Sancor Norden bi",informador:"Soporte Norden",prioridad:"Media",estado:"Pendiente - Desarrollo",actualizada:"10/4/2026 17:10",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1072",resumen:"Linea comercial Norden BI// Error en consulta de Operacion 3033537",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"22/4/2026 12:48",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1073",resumen:"Operaciones Norden BI// Interface cuotas con error",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"12/6/2026 12:40",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1074",resumen:"Linea Administraci\u00f3n Norden BI// ERROR AL PROCESAR LIQUIDACIONES",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"13/7/2026 16:14",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1077",resumen:"Novedades ART - Importacion",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Finalizada",actualizada:"12/6/2026 12:40",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1079",resumen:"Operaciones Norden BI// OP 3011528 // ENDOSO 1 POLIZA N\u00b0 2963574 - ASEG. Maria Ruiz Gutierrez",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"14/4/2026 16:57",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1088",resumen:"Linea comercial Norden BI// Error al vender el presupuesto 170613",informador:"Soporte Norden",prioridad:"Alta",estado:"Finalizada",actualizada:"14/5/2026 14:06",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1090",resumen:"Linea Cobranza// Error en rubrica",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"21/4/2026 12:09",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1092",resumen:"Operaciones Norden BI// Error al consultar operaciones FARMATODO ARGENTINA SA",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"12/6/2026 12:45",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1104",resumen:"Operaciones Norden BI// Anulacion de operacion 2674638",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"26/8/2026 09:45",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1106",resumen:"Operaciones Norden BI// Generica asegurados",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"21/4/2026 12:45",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1112",resumen:"Linea personas// Error 1647859 en cotizaci\u00f3n",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"26/8/2026 09:38",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1113",resumen:"Operaciones Norden BI// Query Carga de operaciones",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"8/10/2026 10:45",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1114",resumen:"Operaciones Norden BI// Crosseling",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"14/5/2026 14:06",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1134",resumen:"Operaciones Norden BI// Interface de comisiones",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"11/5/2026 10:43",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1137",resumen:"Linea comercial Norden BI// Servicios web de AP y venta Web",informador:"Soporte Norden",prioridad:"Media",estado:"Analisis funcional",actualizada:"24/9/2026 12:03",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Nueva caracter\u00edstica",clave:"NS-1141",resumen:"Operaciones Norden BI// Tipo de Endoso",informador:"Soporte Norden",prioridad:"Media",estado:"Pendiente - Desarrollo",actualizada:"28/4/2026 15:29",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1149",resumen:"Operaciones Norden BI// Interface Gen\u00e9rica de operaciones",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"11/5/2026 10:43",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1157",resumen:"Operaciones Norden BI// Error Op 3.046.409",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"25/8/2026 17:29",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1164",resumen:"Linea comercial Norden BI// Mejora al cotizador de Francisco Ciminari",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"8/10/2026 15:07",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1167",resumen:"Linea comercial Norden BI// Vista presupuesto combinado Zurich",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"11/5/2026 10:27",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1172",resumen:"Linea personas// Meridional Cotizador AP",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"2/9/2026 15:22",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1173",resumen:"Generica Vehiculo",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"11/5/2026 10:43",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1174",resumen:"Operaciones Norden BI// Novedades Sancor",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"19/5/2026 17:24",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1175",resumen:"Operaciones Norden BI// Generica de Cobertura",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"12/6/2026 12:45",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1176",resumen:"INLCLUIR MOTOS - OPERATORIA BELT",informador:"JORGE AZCURRA",prioridad:"Urgente",estado:"Finalizada",actualizada:"25/8/2026 17:22",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1177",resumen:"Linea personas// Meridional Cotizador AP Mejora Esencial",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"8/10/2026 15:07",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1178",resumen:"Linea personas// Meridional Cotizador AP Mejora",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"16/9/2026 15:44",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1180",resumen:"Linea personas// Meridional Cotizador AP Mejora",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"8/10/2026 15:07",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1181",resumen:"Linea comercial Norden BI// Cotizador Z\u00farich combinado familiar",informador:"Soporte Norden",prioridad:"Media",estado:"Test",actualizada:"11/5/2026 10:19",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1182",resumen:"Linea comercial Norden BI// Z\u00farich combinado familiar comisiones",informador:"Soporte Norden",prioridad:"Media",estado:"Test",actualizada:"11/5/2026 10:25",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1187",resumen:"Agro Norden BI// Pedido de mejoras y filtros para los diferentes reportes",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"8/10/2026 15:07",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1188",resumen:"Agro Norden BI// Pedido de mejoras y filtros para los diferentes reportes",informador:"Soporte Norden",prioridad:"Media",estado:"Pendiente - Desarrollo",actualizada:"21/8/2026 10:03",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1190",resumen:"Operaciones Norden BI// Zurich combinado familiar",informador:"Soporte Norden",prioridad:"Alta",estado:"Finalizada",actualizada:"7/8/2026 16:03",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1193",resumen:"Administraci\u00f3n// Norden Bi ERROR AL PROCESAR LIQUIDACIONES",informador:"Soporte Norden",prioridad:"Media",estado:"Pendiente - Desarrollo",actualizada:"13/5/2026 10:40",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1195",resumen:"Agro Norden BI// Unir el cotizador con el adelanto de cobertura",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"13/7/2026 16:14",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1208",resumen:"Operaciones Norden BI// Combinado Zurich actualizar coberturas",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"18/5/2026 11:59",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1210",resumen:"COTIZADOR DE AP MERIDIONAL - Correcciones - Segun Reunion 15/05",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Finalizada",actualizada:"27/8/2026 16:31",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Nueva caracter\u00edstica",clave:"NS-1211",resumen:"COTIZADOR DE HOGAR - ZURICH - MEJORAS - Segun Reunion 15/05",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Finalizada",actualizada:"8/10/2026 15:07",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1212",resumen:"COTIZADOR DE HOGAR - ZURICH - ERRORES - Segun Reunion 15/05",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Finalizada",actualizada:"5/6/2026 10:27",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1221",resumen:"Operaciones Norden BI// Error al modificar el domicilio de un ente en la tabla",informador:"Soporte Norden",prioridad:"Alta",estado:"Finalizada",actualizada:"19/5/2026 22:44",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1223",resumen:"Linea comercial Norden BI// Error en consulta de Operaci\u00f3n 3068651",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"26/5/2026 12:32",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1224",resumen:"Siniestros Norden BI// Declaraci\u00f3n de siniestros",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"19/5/2026 22:44",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1231",resumen:"Linea comercial Norden BI// Modificaci\u00f3n masiva Texto adicional",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"28/5/2026 14:07",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1233",resumen:"Linea personas// Mejora al cotizador Zurich hogar (Telefono)",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"8/10/2026 15:07",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Nueva caracter\u00edstica",clave:"NS-1238",resumen:"Operaciones Norden BI// Informaci\u00f3n de los datos de pas en la operaci\u00f3n",informador:"Soporte Norden",prioridad:"Media",estado:"Analisis funcional",actualizada:"24/9/2026 11:56",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1241",resumen:"Linea comercial Norden BI// Zurich combinado familiar // Resultados de una emision",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"5/6/2026 10:37",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1248",resumen:"Operaciones Norden BI// P\u00f3lizas con liquidaci\u00f3n asociada",informador:"Soporte Norden",prioridad:"Media",estado:"Analisis funcional",actualizada:"26/8/2026 11:00",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1254",resumen:"ERROR ALLIANZ",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Finalizada",actualizada:"29/5/2026 10:35",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1255",resumen:"Operaciones Norden BI// Mensajes por servicio caido o novedades en el sistema",informador:"Soporte Norden",prioridad:"Media",estado:"Analisis funcional",actualizada:"24/9/2026 11:53",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1257",resumen:"Linea comercial Norden BI// Error EMBID al emitir negocio  APDELGANI, DIEGO MARTIN",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"29/5/2026 17:25",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1260",resumen:"Linea comercial Norden BI// Error en copia de operaciones",informador:"Soporte Norden",prioridad:"Alta",estado:"Finalizada",actualizada:"5/6/2026 10:28",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1267",resumen:"Operaciones Norden BI// Interface Allianz rebotes",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"1/6/2026 11:15",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Solicitud enviada por correo electr\u00f3nico",clave:"NS-1278",resumen:"RE: [NordenBI] Novedades Seguros Rivadavia",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Finalizada",actualizada:"28/5/2026 17:41",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1289",resumen:"Operaciones Norden BI// Botonera para anular Op 2667520",informador:"Soporte Norden",prioridad:"Media",estado:"Test",actualizada:"26/8/2026 11:04",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1291",resumen:"DESCUENTO AUTOMOTORES - PARAMETROS ZURICH - MULTICOTIZADOR",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Finalizada",actualizada:"2/6/2026 15:49",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1294",resumen:"Operaciones Norden BI// Novedades Sancor",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"2/6/2026 14:27",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1296",resumen:"Caido sistema Norden BI",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"12/6/2026 12:15",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1298",resumen:"Linea comercial Norden BI// Error Cotizador combinado familiar",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"5/6/2026 10:28",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1299",resumen:"linea comercial Norden BI// Cotizador Ap Meridional",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"5/6/2026 10:29",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1306",resumen:"Operaciones Norden BI// Interface Actualiza Generica Asegurados - Excel",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"3/6/2026 13:46",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1307",resumen:"Operaciones Norden BI// Novedades San Cristobal",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"12/6/2026 12:15",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1311",resumen:"Linea comercial Norden BI// Cotizador Hogar Zurich Limites y maximos",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"13/7/2026 16:14",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1314",resumen:"Operaciones Norden BI// Eliminar Ente Productores/ Vendedores MONIACI, LARA",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"8/10/2026 10:46",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1322",resumen:"Agro Norden BI// Error en descarga de reporte Deuda por Cliente",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"13/7/2026 16:14",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1325",resumen:"Vehiculos Duplicados",informador:"Soporte Norden",prioridad:"Media",estado:"Pendiente - Desarrollo",actualizada:"12/6/2026 10:57",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1326",resumen:"Operaciones Norden BI// Error en alta de Ente Productor Vendedor",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"9/6/2026 13:11",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1330",resumen:"Operaciones Norden BI// Error en reporte Informe Veh\u00edculos Vigentes",informador:"Soporte Norden",prioridad:"Media",estado:"Pendiente - Desarrollo",actualizada:"8/6/2026 10:08",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1331",resumen:"Operaciones Norden BI// Error en reporte crosseling",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"21/8/2026 15:40",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1338",resumen:"Operaciones Norden BI// Descarga de poliza Federaci\u00f3n Patronal",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"12/6/2026 10:55",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1339",resumen:"Linea personas// Meridional Cotizador AP",informador:"Soporte Norden",prioridad:"Media",estado:"Pendiente - Desarrollo",actualizada:"20/7/2026 11:20",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1340",resumen:"Agro Norden BI// Error en descarga de reporte Produccion Agr\u00edcola",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"13/7/2026 16:14",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1341",resumen:"Agro Norden BI// Error en reporte Siniestros Agro",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"13/7/2026 16:14",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1343",resumen:"Linea comercial Norden BI// Error al descargar poliza Zurich",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"13/7/2026 16:14",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1350",resumen:"Linea comercial Norden BI// Error al vender presupuesto 172934",informador:"Soporte Norden",prioridad:"Media",estado:"Pendiente - Desarrollo",actualizada:"9/6/2026 14:46",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Solicitud enviada por correo electr\u00f3nico",clave:"NS-1359",resumen:"ERROR DE IA en Presupuestos",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Finalizada",actualizada:"25/8/2026 16:49",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1362",resumen:"Cobranzas Norden BI// URGENTE - ERROR AL PROCESAR LIQUIDACIONES",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"25/8/2026 16:34",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1363",resumen:"Agro Norden BI// Usuario de carga Cobranza",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"25/8/2026 16:49",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Nueva caracter\u00edstica",clave:"NS-1364",resumen:"Consulta sobre el Funcionamiento interfaz cobranzas Bitrix",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"12/6/2026 16:01",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1365",resumen:"INFORMATIVO - GENERICA DE SINIESTROS e Interfaces conectadas /Cotizacion y Emision",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Finalizada",actualizada:"11/6/2026 14:58",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1380",resumen:"MODIFICAR NUMERO DE POLIZA - ASEGURADORA BERKLEY",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Finalizada",actualizada:"16/6/2026 17:35",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1384",resumen:"Linea personas// Error en emisi\u00f3n mapeo de actividad",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"13/7/2026 16:14",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1386",resumen:"Linea comercial Norden BI// Cotizador combinado familiar Bug Clausula de ajuste",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"22/6/2026 12:08",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1387",resumen:"Administraci\u00f3n// Norden Bi ERROR AL PROCESAR LIQUIDACIONES",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"25/8/2026 16:31",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1392",resumen:"Operaciones Norden BI// Vigencia de operacion errada",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"22/6/2026 11:29",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1398",resumen:"Linea comercial Norden BI// Quick cotizador San Cristobal",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"24/6/2026 11:23",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1407",resumen:"Operaciones Norden BI// Soportes JIRA",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"23/6/2026 10:13",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1409",resumen:"Operaciones Norden BI// Generica asegurados",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"24/6/2026 11:23",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1410",resumen:"PEDIDO DE VALIDACION ARCHIVOS GENERICAS",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Finalizada",actualizada:"24/6/2026 11:41",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1411",resumen:"Linea comercial Norden BI// Cotizador Motos descuento",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"23/6/2026 15:35",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1415",resumen:"Linea comercial Norden BI// Cotizador Zurich combinado familiar",informador:"Soporte Norden",prioridad:"Media",estado:"Pendiente - Desarrollo",actualizada:"24/6/2026 11:22",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1416",resumen:"API Alta ItemVehiculo: Dar de alta los vehiculos inexistenes de forma autom\u00e1tica.",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"11/8/2026 21:56",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1426",resumen:"Operaciones Norden BI// Error en consulta de ID 5.206",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"26/6/2026 10:14",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1428",resumen:"Operaciones Norden BI// Rebotes San Cristobal Quick Productores",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"25/8/2026 14:50",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1432",resumen:"URGENTE - POLIZA 80002362748 - Con ERROR",informador:"JORGE AZCURRA",prioridad:"Urgente",estado:"Finalizada",actualizada:"25/8/2026 16:29",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1444",resumen:"Linea comercial Norden BI// Cotizador Allianz",informador:"Soporte Norden",prioridad:"Media",estado:"Derivado a Aseguradora",actualizada:"30/9/2026 17:26",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1447",resumen:"Cobranzas Norden BI// Deudas por compa\u00f1ias",informador:"Soporte Norden",prioridad:"Media",estado:"Test",actualizada:"26/8/2026 11:06",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1448",resumen:"Linea personas// Meridional Cotizador AP error en venta",informador:"Soporte Norden",prioridad:"Alta",estado:"Finalizada",actualizada:"13/7/2026 16:14",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1457",resumen:"Linea comercial Norden BI// Cotizador Zurich combinado familiar",informador:"Soporte Norden",prioridad:"Media",estado:"Trabajo en curso",actualizada:"23/9/2026 17:19",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1459",resumen:"Linea comercial Norden BI// Venta del Bi presupuesto 907",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"25/8/2026 15:01",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1461",resumen:"Linea comercial Norden BI// Cotizador Zurich combinado familiar",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"13/7/2026 16:14",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1463",resumen:"Operaciones Norden BI// Descargar documentaci\u00f3n Allianz",informador:"Soporte Norden",prioridad:"Media",estado:"Analisis funcional",actualizada:"1/7/2026 12:32",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1464",resumen:"Linea comercial Norden BI// Cotizador Zurich combinado familiar",informador:"Soporte Norden",prioridad:"Alta",estado:"Finalizada",actualizada:"8/10/2026 10:48",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1465",resumen:"Linea comercial Norden BI// Cotizador Zurich combinado familiar",informador:"Soporte Norden",prioridad:"Urgente",estado:"Finalizada",actualizada:"13/7/2026 16:14",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1466",resumen:"Linea comercial Norden BI// Cotizador Zurich combinado familiar",informador:"Soporte Norden",prioridad:"Media",estado:"Pendiente - Desarrollo",actualizada:"9/9/2026 15:03",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1467",resumen:"Linea comercial Norden BI// Cotizador Zurich combinado familiar",informador:"Soporte Norden",prioridad:"Media",estado:"Pendiente - Desarrollo",actualizada:"9/9/2026 15:02",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1470",resumen:"Administraci\u00f3n// Mejoras",informador:"Soporte Norden",prioridad:"Media",estado:"Analisis funcional",actualizada:"23/9/2026 17:15",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1471",resumen:"Administraci\u00f3n// Mejoras Dupla Zurich",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"25/8/2026 15:30",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1472",resumen:"Administraci\u00f3n// Mejoras Cta Corriente",informador:"Soporte Norden",prioridad:"Media",estado:"Analisis funcional",actualizada:"28/8/2026 17:03",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1477",resumen:"Linea comercial Norden BI// Cotizador Sancor Auto solicitud de cambio de descuento",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"14/7/2026 12:45",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1478",resumen:"Operaciones Norden BI// Interface unifica/elimina cliente",informador:"Soporte Norden",prioridad:"Media",estado:"Test",actualizada:"6/7/2026 09:58",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1481",resumen:"Linea Cobranza// Error en rubrica CP vacio",informador:"Soporte Norden",prioridad:"Alta",estado:"Finalizada",actualizada:"3/7/2026 16:12",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1482",resumen:"Items duplicados en la consulta por patente",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"25/8/2026 14:42",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1483",resumen:"Operaciones Norden BI// Cambio de cliente en Operacion",informador:"Soporte Norden",prioridad:"Media",estado:"Analisis funcional",actualizada:"6/7/2026 09:53",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1485",resumen:"Linea personas// Presupuesto Producto",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"11/8/2026 21:56",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1499",resumen:"Linea comercial Norden BI// Cotizador Zurich combinado familiar/ Error-Venta presupuesto",informador:"Soporte Norden",prioridad:"Media",estado:"Pendiente - Desarrollo",actualizada:"8/7/2026 17:00",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1502",resumen:"Linea comercial Norden BI// Error al vender el presupuesto 174100",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"11/8/2026 21:56",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1503",resumen:"Pasar Poliza de AUTOMOTORES a Motovehiculo",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Finalizada",actualizada:"13/7/2026 09:56",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1515",resumen:"Agro Norden BI// Totales de comprobante Dolar",informador:"Soporte Norden",prioridad:"Urgente",estado:"Finalizada",actualizada:"17/7/2026 10:37",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1520",resumen:"MODIFICACION Masiva - Incluir Tilde Flota SI",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Finalizada",actualizada:"17/7/2026 10:41",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1528",resumen:"DASHBOARD PATRIMONIALES - PRIMA y STOCK",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Test",actualizada:"20/7/2026 10:35",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1534",resumen:"Linea empresas Norden BI// Solicitud de paginado Operaciones",informador:"Soporte Norden",prioridad:"Media",estado:"Pendiente - Desarrollo",actualizada:"24/8/2026 14:12",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1535",resumen:"Linea empresas Norden BI// Solicitud de paginado ITEMS",informador:"Soporte Norden",prioridad:"Media",estado:"Pendiente - Desarrollo",actualizada:"24/8/2026 14:09",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1539",resumen:"Linea personas// Meridional Cotizador AP Subir Excel",informador:"Soporte Norden",prioridad:"Media",estado:"Pendiente - Desarrollo",actualizada:"5/8/2026 16:41",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1566",resumen:"EDICION DE ASEGURADOS",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Pendiente - Desarrollo",actualizada:"24/7/2026 09:39",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1583",resumen:"Linea comercial Norden BI// Diferencia en precios cotizador Galicia",informador:"Soporte Norden",prioridad:"Media",estado:"Trabajo en curso",actualizada:"27/7/2026 14:33",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1584",resumen:"Linea comercial Norden BI// Mejora al cotizador Auto",informador:"Soporte Norden",prioridad:"Media",estado:"Pendiente - Desarrollo",actualizada:"7/8/2026 18:24",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1586",resumen:"Linea comercial Norden BI// Historico Sancor bajo el pas MASLOW - QUILMES",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"25/8/2026 14:19",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1618",resumen:"Linea personas// cotizador Meridional // Error emisi\u00f3n de presupuesto",informador:"Soporte Norden",prioridad:"Media",estado:"Pendiente - Desarrollo",actualizada:"4/8/2026 15:37",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1619",resumen:"Agregar validaciones a los medios de pago electronicos",informador:"Soporte Norden",prioridad:"Media",estado:"Pendiente - Desarrollo",actualizada:"6/8/2026 14:18",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1623",resumen:"Operaciones Norden BI// Facturacion interface operaciones",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"25/8/2026 10:32",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1625",resumen:"Operaciones Norden BI// Novedades Berkley",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"25/8/2026 10:40",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1629",resumen:"Linea comercial Norden BI// Informe de venta y informe de asegurados",informador:"Soporte Norden",prioridad:"Media",estado:"Pendiente - Desarrollo",actualizada:"5/8/2026 09:02",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1630",resumen:"Linea comercial Norden BI// Parametrizacion comision Galicia",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"11/8/2026 16:01",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1634",resumen:"EDICION CLIENTES/Datos del beneficiario - CAUCION",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Analisis funcional",actualizada:"25/8/2026 13:50",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Nueva caracter\u00edstica",clave:"NS-1636",resumen:"VISTA DE POLIZAS dentro de Consulta de Asegurado",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Finalizada",actualizada:"11/8/2026 21:56",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1638",resumen:"Operaciones Norden BI// Mejora en la consulta de clientes",informador:"Soporte Norden",prioridad:"Media",estado:"Rechazado",actualizada:"7/8/2026 18:35",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1645",resumen:"Linea comercial Norden BI// Cotizador Zurich combinado familiar Localidad cobranza y items",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"2/9/2026 15:22",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1649",resumen:"Operaciones Norden BI// Polizas con Organizador vacio",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"25/8/2026 10:35",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1656",resumen:"Linea comercial Norden BI// Zurich combinado familiar // 0 en las coberturas",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"8/10/2026 15:07",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1657",resumen:"Linea comercial Norden BI// Emision Zurich combinado familiar // Error al descargar la documentacion",informador:"Soporte Norden",prioridad:"Media",estado:"Pendiente - Desarrollo",actualizada:"21/8/2026 10:20",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1658",resumen:"Linea comercial Norden BI// Zurich combinado familiar // Default en coberturas",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"7/8/2026 16:06",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1659",resumen:"Linea comercial Norden BI// Zurich combinado familiar // Via de cobro efectivo",informador:"Soporte Norden",prioridad:"Media",estado:"Pendiente - Desarrollo",actualizada:"13/8/2026 12:29",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1662",resumen:"Agro Norden BI// Reporte deuda por cliente",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"8/10/2026 15:07",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1669",resumen:"Linea comercial Norden BI// Error en descarga de documentaci\u00f3n para Allianz",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"2/9/2026 15:23",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1671",resumen:"Operaciones Norden BI// Cambio de cliente asegurado",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"25/8/2026 10:22",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1674",resumen:"Linea comercial Norden BI// Cotizador COMBINADO FAMILIAR Sancor",informador:"Soporte Norden",prioridad:"Media",estado:"Test",actualizada:"30/9/2026 13:18",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1685",resumen:"ABM - ATM - TIPOS DE ENDOSO N, C Y A",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Finalizada",actualizada:"25/8/2026 10:15",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1686",resumen:"Falla en captura de valor en campos desplegables por interferencia del autocompletado del navegador",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Pendiente - Desarrollo",actualizada:"20/8/2026 10:12",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1701",resumen:"Linea comercial Norden BI// Cotizador Zurich combinado familiar //Spinelli, Cecilia Beatriz",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"2/9/2026 08:10",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1708",resumen:"Linea comercial Norden BI// Cotizador Motos Norden BI",informador:"Soporte Norden",prioridad:"Media",estado:"PENDIENTE - PRODUCTO",actualizada:"9/10/2026 10:52",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1718",resumen:"Operaciones Norden BI// Timeout Norden BI",informador:"Soporte Norden",prioridad:"Media",estado:"Test",actualizada:"24/8/2026 10:04",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1720",resumen:"ERROR en copia de poliza",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Pendiente - Cliente",actualizada:"17/9/2026 16:00",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1721",resumen:"ERROR EN REPORTE DE POLIZAS VIGENTES",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Finalizada",actualizada:"25/8/2026 12:37",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1723",resumen:"Linea comercial Norden BI// Experta-Quick Cotizador",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"8/10/2026 15:05",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1727",resumen:"error COTIZADOR ZURICH Producto Zurich Hogar Ver. 1",informador:"JORGE AZCURRA",prioridad:"Urgente",estado:"Pendiente - Cliente",actualizada:"25/9/2026 17:35",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Solicitud enviada por correo electr\u00f3nico",clave:"NS-1742",resumen:"RE: CERTIFICADO AP",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Analisis funcional",actualizada:"23/9/2026 15:20",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1743",resumen:"Operaciones// Herramienta JIRA atlassian usuario Admin",informador:"Soporte Norden",prioridad:"Baja",estado:"Trabajo en curso",actualizada:"7/10/2026 13:04",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1751",resumen:"RENOVACIONES DE FLOTA X INTERFACE - No toma default de Poliza anterior SI FLOTA",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Pendiente - Desarrollo",actualizada:"27/8/2026 15:40",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1752",resumen:"Operaciones Norden BI// Novedades Sancor AFINIDAD TECNOSOFTWARE SA",informador:"Soporte Norden",prioridad:"Media",estado:"Trabajo en curso",actualizada:"11/9/2026 10:13",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1755",resumen:"Linea comercial Norden BI// Cotizador Meridional AP-Error Comisi\u00f3n Inv\u00e1lida",informador:"Soporte Norden",prioridad:"Urgente",estado:"Finalizada",actualizada:"8/10/2026 10:50",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Solicitud enviada por correo electr\u00f3nico",clave:"NS-1765",resumen:"RV: AGRO - Datos para envio automatico de p\u00f3lizas",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Analisis funcional",actualizada:"21/9/2026 14:58",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1769",resumen:"Operaciones Norden BI// Interface Coberturas Sancor",informador:"Soporte Norden",prioridad:"Media",estado:"Pendiente - Desarrollo",actualizada:"22/9/2026 17:25",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1781",resumen:"Linea comercial Norden BI// Combinado familiar Zurich// Fares Sabrina",informador:"Soporte Norden",prioridad:"Alta",estado:"Finalizada",actualizada:"7/9/2026 15:51",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1790",resumen:"Linea comercial Norden BI// Cotizador Auto Zurich- Vista coberturas",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"21/9/2026 14:40",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1795",resumen:"VER FORMA DE PAGO EN UNA VENTA POR MULTI A MERCANTIL",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Pendiente - Cliente",actualizada:"21/9/2026 14:35",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1796",resumen:"Operaciones Norden BI// Interface Sancor SG",informador:"Soporte Norden",prioridad:"Media",estado:"Analisis funcional",actualizada:"6/10/2026 15:09",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1798",resumen:"Operaciones Norden BI// Interface unificaci\u00f3n Asegurados",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"11/9/2026 16:52",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1800",resumen:"Linea comercial Norden BI// Emision Galicia Mariano Crespo",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"16/9/2026 15:44",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1801",resumen:"Linea comercial Norden BI// Cotizador AP Meridional diferencia en precios",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"8/10/2026 15:07",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1802",resumen:"Linea comercial Norden BI// Combinado familiar Zurich// Fares Sabrina",informador:"Soporte Norden",prioridad:"Media",estado:"Analisis funcional",actualizada:"7/9/2026 17:33",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1803",resumen:"Operaciones Norden BI// Errores recurrentes del Norden BI",informador:"Soporte Norden",prioridad:"Media",estado:"Rechazado",actualizada:"28/9/2026 15:05",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1815",resumen:"Operaciones Norden BI// Interface Actualiza Generica Comisiones - Excel",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"9/9/2026 16:03",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1816",resumen:"Operaciones Norden BI// Interface Gen\u00e9rica de Operaciones// error al reprocesar",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"9/9/2026 15:38",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1825",resumen:"Linea comercial Norden BI// Cotizador COMBINADO FAMILIAR Zurich-Error en venta",informador:"Soporte Norden",prioridad:"Media",estado:"Pendiente - Desarrollo",actualizada:"11/9/2026 16:43",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1826",resumen:"Linea comercial Norden BI// Cotizador COMBINADO FAMILIAR Zurich via de cobro",informador:"Soporte Norden",prioridad:"Media",estado:"Derivado a Aseguradora",actualizada:"18/9/2026 17:22",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1836",resumen:"Administraci\u00f3n// CORRECCION DESCRIPCION LIQUIDACIONES",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"14/9/2026 11:13",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1848",resumen:"Linea comercial Norden BI// Venta de presupuesto 177043 Mercantil",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"18/9/2026 15:15",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1851",resumen:"Operaciones Norden BI// Interface Galicia MONIACI, LARA",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"8/10/2026 10:52",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1852",resumen:"Agro Norden BI// Adelanto de coberturas- agregar compa\u00f1ia MAPFRE ARGENTINA SEGUROS S.A. ( 126 )",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"16/9/2026 16:46",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1853",resumen:"[AGRO] integraci\u00f3n Climavista \u2013 Norden BI y asociaci\u00f3n de archivos KMZ",informador:"Emilia Rodriguez",prioridad:"Media",estado:"Analisis funcional",actualizada:"2/10/2026 17:49",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1854",resumen:"Operaciones Norden BI// Interface Mercantil Endosos",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"8/10/2026 10:53",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1858",resumen:"Linea comercial Norden BI// Venta de presupuesto 177188 Sancor",informador:"Soporte Norden",prioridad:"Urgente",estado:"Finalizada",actualizada:"18/9/2026 15:22",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1860",resumen:"Linea comercial Quick-Norden BI// error en el cotizador",informador:"Soporte Norden",prioridad:"Urgente",estado:"Finalizada",actualizada:"18/9/2026 15:21",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1863",resumen:"Operaciones Norden BI// Error al consultar Orden de renovacion",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"18/9/2026 15:18",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1878",resumen:"Operaciones Norden BI// Interface Allianz",informador:"Soporte Norden",prioridad:"Media",estado:"Analisis funcional",actualizada:"22/9/2026 16:24",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1881",resumen:"Linea comercial Norden BI// Venta de presupuesto 177208 Mercantil",informador:"Soporte Norden",prioridad:"Media",estado:"Trabajo en curso",actualizada:"2/10/2026 11:14",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1882",resumen:"Linea comercial Norden BI// Venta de presupuesto 177361 Sancor",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"8/10/2026 10:55",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1899",resumen:"Siniestro Norden BI// Error al reportar siniestro poliza 31387256",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"9/10/2026 10:25",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Nueva caracter\u00edstica",clave:"NS-1908",resumen:"COTIZADOR PRODUCTO ACCIDENTES PERSONALES - MERIDIONAL",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Analisis funcional",actualizada:"29/9/2026 11:26",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1911",resumen:"Linea comercial Norden BI// Cobertura inexistente Allianz",informador:"Soporte Norden",prioridad:"Media",estado:"Pendiente - Cliente",actualizada:"9/10/2026 09:43",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1912",resumen:"INTERFACE GENERICA COMISIONES",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Finalizada",actualizada:"6/10/2026 18:52",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1914",resumen:"REVISAR REPORTE - Informe de Veh\u00edculos Vigentes",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Pendiente - Soporte",actualizada:"8/10/2026 13:15",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1920",resumen:"INTERFACES - CODIGO RELACION INTERFACE - OPERACIONES vs ITEM VEHICULO y COBERTURA",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Trabajo en curso",actualizada:"2/10/2026 15:26",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Solicitud enviada por correo electr\u00f3nico",clave:"NS-1922",resumen:"RV: Norden- Novedades Meridional",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Analisis funcional",actualizada:"30/9/2026 14:12",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1925",resumen:"CONSULTA ACERCA DE CAMPOS del COTIZADOR",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Finalizada",actualizada:"30/9/2026 16:45",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1926",resumen:"Cambio de Moneda por error en Migracion CHUBB",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Trabajo en curso",actualizada:"30/9/2026 15:10",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1944",resumen:"Operaciones Norden BI// Interface Asegurados",informador:"Soporte Norden",prioridad:"Media",estado:"Pendiente - Cliente",actualizada:"7/10/2026 15:40",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1945",resumen:"Operaciones Norden BI// Novedades Sancor organizador 152942 - ELEMENTAL BROKERS SOCIEDAD DE PRODUCTORES Y ASESORES DE SEGU",informador:"Soporte Norden",prioridad:"Media",estado:"Trabajo en curso",actualizada:"8/10/2026 09:56",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1955",resumen:"PAS DUPLICADO - UNIFICAR ID PAS/CLIENTE",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Finalizada",actualizada:"7/10/2026 15:53",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1957",resumen:"PEDIDO DE DOCUMENTO ACTUALIZADO DE INTEGRACIONES CON ASEGURADORAS",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Finalizada",actualizada:"6/10/2026 17:45",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1958",resumen:"Solicitud de Roadmap, detalle de mejoras y documentaci\u00f3n - Migraci\u00f3n a nuevas interfaces NordenBi",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Trabajo en curso",actualizada:"6/10/2026 10:57",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1963",resumen:"DAR DE BAJA PROCESO DE INTERFACE COMPLEMENTARIA",informador:"JORGE AZCURRA",prioridad:"Urgente",estado:"Pendiente - Cliente",actualizada:"6/10/2026 14:52",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1965",resumen:"GAlicia - Enviar a BI - error de Vigencia - Solo 1 d\u00eda",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Pendiente - Soporte",actualizada:"7/10/2026 17:00",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1966",resumen:"Operaciones Norden BI// Carga de Aseguradora INSTITUTO AUTARQUICO",informador:"Soporte Norden",prioridad:"Media",estado:"Finalizada",actualizada:"6/10/2026 17:37",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Soporte",clave:"NS-1975",resumen:"INTERFACE ALLIANZ",informador:"Emilia Rodriguez",prioridad:"Alta",estado:"Pendiente - Cliente",actualizada:"7/10/2026 17:44",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1976",resumen:"Operaciones Norden BI// Interface externa cambio de productor",informador:"Soporte Norden",prioridad:"Media",estado:"Trabajo en curso",actualizada:"9/10/2026 10:42",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1979",resumen:"INFORME DE POLIZAS VIGENTES",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Finalizada",actualizada:"8/10/2026 14:37",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Error",clave:"NS-1981",resumen:"Operaciones Norden BI// Interface Operaciones-SG02 - No se proces\u00f3 el Asegurado",informador:"Soporte Norden",prioridad:"Media",estado:"Trabajo en curso",actualizada:"8/10/2026 14:06",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Solicitud enviada por correo electr\u00f3nico",clave:"NS-1982",resumen:"ALLIANZ Filtrar Tipos de Refacturaci\u00f3n",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Trabajo en curso",actualizada:"8/10/2026 15:54",horas_min:10,horas_asignadas:0,ok:false},
+{tipo:"Solicitud enviada por correo electr\u00f3nico",clave:"NS-1983",resumen:"MOTOR - Error - Al emitir en Allianz no arroja el cc de la compa\u00f1\u00eda",informador:"JORGE AZCURRA",prioridad:"Media",estado:"Trabajo en curso",actualizada:"8/10/2026 16:27",horas_min:10,horas_asignadas:0,ok:false}
+];
+
+let tickets = TICKETS_BASE.map(t => ({...t}));
+try {
+  const saved = JSON.parse(localStorage.getItem('nb_state') || '[]');
+  saved.forEach(s => { const t = tickets.find(x => x.clave === s.clave); if(t){t.horas_min=s.horas_min;t.horas_asignadas=s.horas_asignadas;t.ok=s.ok;} });
+} catch(e) {}
+
+const PAL = ['#4BBFEA','#1e3a5f','#22c55e','#f59e0b','#8b5cf6','#ef4444','#06b6d4','#f97316','#84cc16','#ec4899','#6366f1','#14b8a6'];
+
+function showTab(id,btn){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  btn.classList.add('active');
+}
+
+function pillStyle(e){
+  const m={'Finalizada':'background:#dcfce7;color:#166534','Trabajo en curso':'background:#dbeafe;color:#1e3a5f','Análisis técnico':'background:#fef9c3;color:#854d0e','Analisis funcional':'background:#fef9c3;color:#854d0e','Pendiente - Desarrollo':'background:#fee2e2;color:#991b1b','Pendiente - Soporte':'background:#ffedd5;color:#9a3412','Pendiente - Cliente':'background:#ede9fe;color:#5b21b6','Rechazado':'background:#f1f5f9;color:#475569','Test':'background:#d1fae5;color:#065f46','Derivado a Aseguradora':'background:#e0f2fe;color:#0369a1','PENDIENTE - PRODUCTO':'background:#fce7f3;color:#9d174d'};
+  return m[e]||'background:#e2e8f0;color:#334155';
+}
+
+function makePie(el, data) {
+  const tot = data.reduce((s,d)=>s+d.v,0);
+  const cx=140,cy=120,r=95;
+  let paths='',leg='',angle=0;
+  data.forEach((d,i)=>{
+    const pct=d.v/tot, a1=angle, a2=angle+pct*2*Math.PI;
+    const x1=cx+r*Math.sin(a1),y1=cy-r*Math.cos(a1);
+    const x2=cx+r*Math.sin(a2),y2=cy-r*Math.cos(a2);
+    const lg=pct>0.5?1:0;
+    const mx=(a1+a2)/2;
+    const lx=cx+(r+24)*Math.sin(mx),ly=cy-(r+24)*Math.cos(mx);
+    const esc=JSON.stringify(d.l);
+    paths+=`<path d="M${cx},${cy} L${x1},${y1} A${r},${r},0,${lg},1,${x2},${y2}Z" fill="${d.c}" stroke="#fff" stroke-width="2.5" style="cursor:pointer;opacity:.91" onclick="openModal('tipo',${esc})"><title>${d.l}: ${d.v} (${Math.round(pct*100)}%)</title></path>`;
+    if(pct>0.06) paths+=`<text x="${lx}" y="${ly+4}" text-anchor="middle" font-size="11" font-family="Segoe UI,sans-serif" fill="#fff" font-weight="700" pointer-events="none">${Math.round(pct*100)}%</text>`;
+    leg+=`<g transform="translate(0,${i*24})" onclick="openModal('tipo',${esc})" style="cursor:pointer"><rect x="0" y="3" width="13" height="13" rx="3" fill="${d.c}"/><text x="20" y="14" font-size="11" font-family="Segoe UI,sans-serif" fill="#334155">${d.l} (${d.v})</text></g>`;
+    angle=a2;
+  });
+  paths+=`<text x="${cx}" y="${cy-5}" text-anchor="middle" font-size="14" font-family="Segoe UI,sans-serif" fill="#1e293b" font-weight="800">${tot}</text><text x="${cx}" y="${cy+12}" text-anchor="middle" font-size="10" font-family="Segoe UI,sans-serif" fill="#64748b">total</text>`;
+  const lH=data.length*24+10;
+  el.innerHTML=`<svg class="svg-chart" viewBox="0 0 340 ${Math.max(260,lH+10)}" style="max-height:280px">${paths}<g transform="translate(${cx*2+10},${cy-data.length*12})">${leg}</g></svg>`;
+}
+
+function makeBar(el, labels, vals, colors) {
+  const W=500,H=220,pL=28,pB=36,pT=10,pR=8;
+  const cW=W-pL-pR, cH=H-pB-pT;
+  const maxV=Math.max(...vals,1);
+  const bW=Math.min(42,cW/labels.length*0.68);
+  const gap=cW/labels.length;
+  let bars='',axes='';
+  for(let i=0;i<=4;i++){
+    const y=pT+cH*(1-i/4);
+    axes+=`<line x1="${pL}" y1="${y}" x2="${W-pR}" y2="${y}" stroke="#e2e8f0" stroke-width="1"/>`;
+    axes+=`<text x="${pL-4}" y="${y+4}" font-size="9" fill="#94a3b8" text-anchor="end">${Math.round(maxV*i/4)}</text>`;
+  }
+  labels.forEach((lbl,i)=>{
+    const bH=vals[i]/maxV*cH;
+    const x=pL+gap*(i+0.5)-bW/2;
+    const y=pT+cH-bH;
+    const sl=lbl.length>13?lbl.substring(0,12)+'…':lbl;
+    const esc=JSON.stringify(lbl);
+    bars+=`<rect x="${x}" y="${y}" width="${bW}" height="${bH}" rx="4" fill="${colors[i%colors.length]}" style="cursor:pointer;opacity:.88" onclick="openModal('estado',${esc})"><title>${lbl}: ${vals[i]}</title></rect>`;
+    bars+=`<text x="${x+bW/2}" y="${y-4}" font-size="10" fill="#334155" text-anchor="middle" font-weight="600">${vals[i]}</text>`;
+    bars+=`<text x="${x+bW/2}" y="${H-pB+14}" font-size="8" fill="#64748b" text-anchor="middle" transform="rotate(-30,${x+bW/2},${H-pB+14})">${sl}</text>`;
+  });
+  el.innerHTML=`<svg class="svg-chart" viewBox="0 0 ${W} ${H}" style="max-height:240px">${axes}${bars}<line x1="${pL}" y1="${pT}" x2="${pL}" y2="${pT+cH}" stroke="#cbd5e1" stroke-width="1.5"/><line x1="${pL}" y1="${pT+cH}" x2="${W-pR}" y2="${pT+cH}" stroke="#cbd5e1" stroke-width="1.5"/></svg>`;
+}
+
+function buildResumen(){
+  const tipos=[...new Set(tickets.map(t=>t.tipo))].sort();
+  const estados=[...new Set(tickets.map(t=>t.estado))].sort();
+  const total=tickets.length;
+  const fin=tickets.filter(t=>t.estado==='Finalizada').length;
+  const cur=tickets.filter(t=>t.estado==='Trabajo en curso').length;
+  const pD=tickets.filter(t=>t.estado==='Pendiente - Desarrollo').length;
+  const rec=tickets.filter(t=>t.estado==='Rechazado').length;
+  document.getElementById('kpiRow').innerHTML=`
+    <div class="kpi"><div class="kpi-val">${total}</div><div class="kpi-lbl">Total Tickets</div></div>
+    <div class="kpi green"><div class="kpi-val">${fin}</div><div class="kpi-lbl">Finalizadas</div></div>
+    <div class="kpi sky"><div class="kpi-val">${cur}</div><div class="kpi-lbl">En Curso</div></div>
+    <div class="kpi orange"><div class="kpi-val">${pD}</div><div class="kpi-lbl">Pend. Desarrollo</div></div>
+    <div class="kpi purple"><div class="kpi-val">${rec}</div><div class="kpi-lbl">Rechazados</div></div>
+  `;
+  document.getElementById('totalBadge').textContent=total+' tickets';
+  makePie(document.getElementById('chartTipo'), tipos.map((tp,i)=>({l:tp,v:tickets.filter(t=>t.tipo===tp).length,c:PAL[i]})));
+  makeBar(document.getElementById('chartEstado'), estados, estados.map(e=>tickets.filter(t=>t.estado===e).length), PAL);
+  let th=`<table class="xt"><thead><tr><th>Tipo</th>`;
+  estados.forEach(e=>th+=`<th>${e}</th>`);
+  th+=`<th class="total">TOTAL</th></tr></thead><tbody>`;
+  let tot=new Array(estados.length).fill(0);
+  tipos.forEach(tp=>{
+    th+=`<tr><td class="lbl">${tp}</td>`;
+    let rT=0;
+    estados.forEach((e,ei)=>{
+      const n=tickets.filter(t=>t.tipo===tp&&t.estado===e).length;
+      tot[ei]+=n;rT+=n;
+      th+=`<td onclick="openModal2('${tp.replace(/'/g,"\'")}','${e.replace(/'/g,"\'")}') " style="cursor:pointer${n?';font-weight:600':''}">${n||''}</td>`;
+    });
+    th+=`<td class="total">${rT}</td></tr>`;
+  });
+  th+=`<tr><td class="lbl">TOTAL</td>`;
+  tot.forEach(n=>th+=`<td class="total">${n}</td>`);
+  th+=`<td class="total">${total}</td></tr></tbody></table>`;
+  document.getElementById('xtableWrap').innerHTML=th;
+}
+
+function openModal(type,val){
+  const filt=type==='tipo'?tickets.filter(t=>t.tipo===val):tickets.filter(t=>t.estado===val);
+  showModal(filt,val);
+}
+function openModal2(tp,es){
+  const filt=tickets.filter(t=>t.tipo===tp&&t.estado===es);
+  if(filt.length) showModal(filt,tp+' — '+es);
+}
+function showModal(filt,title){
+  document.getElementById('mtitle').textContent=title;
+  document.getElementById('msub').textContent=filt.length+' tickets';
+  let rows='';
+  filt.forEach(t=>{rows+=`<tr><td><b style="color:#1a5276">${t.clave}</b></td><td>${t.resumen}</td><td>${t.informador}</td><td>${t.prioridad}</td><td><span class="pill" style="${pillStyle(t.estado)}">${t.estado}</span></td><td style="font-size:.7rem;color:#64748b">${t.actualizada}</td></tr>`;});
+  document.getElementById('mbody').innerHTML=`<table><thead><tr><th>Clave</th><th>Resumen</th><th>Informador</th><th>Prioridad</th><th>Estado</th><th>Actualizada</th></tr></thead><tbody>${rows}</tbody></table>`;
+  document.getElementById('moverlay').classList.add('open');
+}
+function closeMod(){document.getElementById('moverlay').classList.remove('open');}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeMod();});
+
+function updateHrsBar(){
+  const ac=parseFloat(document.getElementById('hsAcord').value)||200;
+  const tot=tickets.reduce((s,t)=>s+t.horas_min,0);
+  const asig=tickets.reduce((s,t)=>s+t.horas_asignadas,0);
+  const pct=Math.min(100,Math.round(tot/ac*100));
+  document.getElementById('hrsFill').style.width=pct+'%';
+  document.getElementById('hrsStats').innerHTML=`<span>⏱ Acordadas: <b>${ac}hs</b></span><span>📋 Estimadas: <b>${tot}hs</b></span><span>✅ Asignadas: <b>${asig}hs</b></span><span>📊 Uso: <b>${pct}%</b></span>`;
+  const ok=tickets.filter(t=>t.ok).length;
+  document.getElementById('kpiHrs').innerHTML=`
+    <div class="kpi sky"><div class="kpi-val">${tickets.length}</div><div class="kpi-lbl">Total Jiras</div></div>
+    <div class="kpi green"><div class="kpi-val">${ok}</div><div class="kpi-lbl">Aprobados ✅</div></div>
+    <div class="kpi orange"><div class="kpi-val">${tickets.length-ok}</div><div class="kpi-lbl">Sin Aprobar</div></div>
+    <div class="kpi"><div class="kpi-val">${ac}</div><div class="kpi-lbl">Hs Acordadas</div></div>
+  `;
+}
+
+function renderPlanif(){
+  const ft=(document.getElementById('filtroTipo').value||'').toLowerCase();
+  const fe=(document.getElementById('filtroEstado').value||'').toLowerCase();
+  const fo=document.getElementById('filtroOk').value;
+  const filt=tickets.filter(t=>(!ft||t.tipo.toLowerCase().includes(ft))&&(!fe||t.estado.toLowerCase().includes(fe))&&(fo===''||(fo==='ok'&&t.ok)||(fo==='nook'&&!t.ok)));
+  let html=`<table class="jira-tbl"><thead><tr><th>Clave</th><th>Tipo</th><th>Resumen</th><th>Estado</th><th>Informador</th><th>Hs Mín</th><th>Hs Asig</th><th>OK</th></tr></thead><tbody>`;
+  filt.forEach(t=>{
+    const idx=tickets.indexOf(t);
+    html+=`<tr><td><b style="color:#1a5276">${t.clave}</b></td><td style="font-size:.72rem;white-space:nowrap">${t.tipo}</td><td style="max-width:280px">${t.resumen}</td><td><span class="pill" style="${pillStyle(t.estado)}">${t.estado}</span></td><td>${t.informador}</td><td><input type="number" value="${t.horas_min}" min="1" onchange="tickets[${idx}].horas_min=+this.value;updateHrsBar()"></td><td><input type="number" value="${t.horas_asignadas}" min="0" onchange="tickets[${idx}].horas_asignadas=+this.value;updateHrsBar()"></td><td style="text-align:center"><input type="checkbox" ${t.ok?'checked':''} onchange="tickets[${idx}].ok=this.checked;updateHrsBar()"></td></tr>`;
+  });
+  html+=`</tbody></table><p style="font-size:.75rem;color:#64748b;margin-top:8px">Mostrando ${filt.length} de ${tickets.length} tickets</p>`;
+  document.getElementById('planifWrap').innerHTML=html;
+}
+
+function doSearch(){
+  const q=(document.getElementById('searchQ').value||'').trim().toLowerCase();
+  if(!q)return;
+  const res=tickets.filter(t=>t.clave.toLowerCase().includes(q)||t.resumen.toLowerCase().includes(q)||t.informador.toLowerCase().includes(q)||t.estado.toLowerCase().includes(q)||t.tipo.toLowerCase().includes(q));
+  const esc=q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+  const hl=txt=>txt.replace(new RegExp('('+esc+')','gi'),'<mark>$1</mark>');
+  const div=document.getElementById('searchResults');
+  if(!res.length){div.innerHTML=`<p style="color:#64748b;padding:20px 0;">Sin resultados para "${q}".</p>`;return;}
+  div.innerHTML=`<p style="font-size:.78rem;color:#64748b;margin-bottom:10px">${res.length} resultado(s)</p>`+
+    res.map(t=>`<div class="result-card"><div class="rc-key">${hl(t.clave)} <span class="pill" style="${pillStyle(t.estado)}">${t.estado}</span></div><div class="rc-res">${hl(t.resumen)}</div><div class="rc-meta">👤 ${hl(t.informador)} &nbsp;·&nbsp; 🏷 ${t.tipo} &nbsp;·&nbsp; 📅 ${t.actualizada} &nbsp;·&nbsp; ⚡ ${t.prioridad}</div></div>`).join('');
+}
+
+function saveLocalState(){
+  try{localStorage.setItem('nb_state',JSON.stringify(tickets.map(t=>({clave:t.clave,horas_min:t.horas_min,horas_asignadas:t.horas_asignadas,ok:t.ok}))));alert('Estado guardado ✅');}catch(e){alert('No se pudo guardar');}
+}
+
+function exportCSV(){
+  const rows=[['Clave','Tipo','Resumen','Informador','Prioridad','Estado','Actualizada','Hs Min','Hs Asignadas','OK']];
+  tickets.forEach(t=>rows.push([t.clave,t.tipo,'"'+t.resumen.replace(/"/g,'""')+'"',t.informador,t.prioridad,t.estado,t.actualizada,t.horas_min,t.horas_asignadas,t.ok?'Si':'No']));
+  const csv=rows.map(r=>r.join(';')).join('\n');
+  const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(csv);a.download='norden-soporte.csv';a.click();
+}
+
+function loadFile(file){
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const text=e.target.result;
+    const lines=text.trim().split(/\r?\n/);
+    const sep=lines[0].includes(';')?';':',';
+    const headers=lines[0].split(sep).map(h=>h.replace(/^\uFEFF/,'').replace(/^"|"$/g,'').trim());
+    const claveCol=headers.find(c=>c.toLowerCase().includes('clave'));
+    const infoCol=headers.find(c=>c.toLowerCase().includes('informador')&&!c.toLowerCase().includes('id'));
+    const actCol=headers.find(c=>c.toLowerCase().includes('actualizada')||c.toLowerCase().includes('updated'));
+    const rows=[];
+    for(let i=1;i<lines.length;i++){
+      if(!lines[i].trim())continue;
+      const parts=[];let iq=false,cur='';
+      for(const ch of lines[i]){if(ch==='"')iq=!iq;else if(ch===sep&&!iq){parts.push(cur.trim());cur='';}else cur+=ch;}
+      parts.push(cur.trim());
+      const row={};headers.forEach((h,j)=>row[h]=parts[j]||'');
+      const tipo=row['Tipo de Incidencia']||'';
+      if(!tipo)continue;
+      rows.push({tipo,clave:row[claveCol]||'',resumen:(row['Resumen']||'').trim(),informador:row[infoCol]||'',prioridad:row['Prioridad']||'',estado:row['Estado']||'',actualizada:row[actCol]||'',horas_min:10,horas_asignadas:0,ok:false});
+    }
+    if(rows.length){tickets=rows;buildResumen();renderPlanif();updateHrsBar();document.getElementById('dropZone').style.borderColor='#22c55e';document.getElementById('totalBadge').textContent=rows.length+' tickets';}
+    else alert('No se encontraron datos válidos.');
+  };
+  reader.readAsText(file,'UTF-8');
+}
+
+const dz=document.getElementById('dropZone');
+dz.addEventListener('dragover',e=>{e.preventDefault();dz.style.borderColor='#4BBFEA';});
+dz.addEventListener('dragleave',()=>{dz.style.borderColor='#94a3b8';});
+dz.addEventListener('drop',e=>{e.preventDefault();dz.style.borderColor='#94a3b8';const f=e.dataTransfer.files[0];if(f)loadFile(f);});
+
+buildResumen();
+renderPlanif();
+updateHrsBar();
+</script>
+</body>
+</html>
